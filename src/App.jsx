@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { restaurantDefaults, supabase } from "./config";
 import {
   ArrowLeft,
   Check,
@@ -16,7 +17,7 @@ import {
   X
 } from "lucide-react";
 import { initialMenu } from "./data";
-import { restaurantDefaults } from "./config";
+
 import {
   createUpiPayment,
   isValidTransactionId,
@@ -42,6 +43,58 @@ function useStoredState(key, initialValue) {
 
   return [value, setValue];
 }
+async function loadMenuFromSupabase() {
+  if (!supabase) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("menu_items")
+    .select("id, item")
+    .order("id");
+
+  if (error) {
+    console.error("Could not load menu from Supabase:", error);
+    return null;
+  }
+
+  if (!data || data.length === 0) {
+    return null;
+  }
+
+  return data.map((row) => row.item);
+}
+async function saveMenuToSupabase(menuItems) {
+  if (!supabase) {
+    return;
+  }
+
+  const rows = menuItems.map((item) => ({
+    id: String(item.id),
+    item
+  }));
+
+  const { error: deleteError } = await supabase
+    .from("menu_items")
+    .delete()
+    .neq("id", "");
+
+  if (deleteError) {
+    console.error("Could not clear menu in Supabase:", deleteError);
+    return;
+  }
+
+  const { error: insertError } = await supabase
+    .from("menu_items")
+    .insert(rows);
+
+  if (insertError) {
+    console.error("Could not save menu to Supabase:", insertError);
+    return;
+  }
+
+  console.log("Menu saved to Supabase.");
+}
 
 function App() {
   const [menu, setMenu] = useStoredState("kk-menu", initialMenu);
@@ -56,6 +109,23 @@ function App() {
   const [selected, setSelected] = useState(null);
   const [admin, setAdmin] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+  
+    async function loadMenu() {
+      const remoteMenu = await loadMenuFromSupabase();
+  
+      if (!cancelled && remoteMenu) {
+        setMenu(remoteMenu);
+      }
+    }
+  
+    loadMenu();
+  
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const filteredMenu = useMemo(
     () =>
@@ -984,14 +1054,20 @@ function Admin({
   setOrders,
   exit
 }) {
-  const [tab, setTab] =
-    useState("dashboard");
-
   const [loggedIn, setLoggedIn] =
     useState(false);
 
+  const [email, setEmail] =
+    useState("");
+
   const [password, setPassword] =
     useState("");
+
+  const [loginLoading, setLoginLoading] =
+    useState(false);
+
+  const [tab, setTab] =
+    useState("dashboard");
 
   if (!loggedIn) {
     return (
@@ -1010,44 +1086,69 @@ function Admin({
           </h1>
 
           <p>
-            Use the temporary password{" "}
-            <strong>
-              EDIT_ME
-            </strong>{" "}
-            until authentication is
-            connected.
-          </p>
+  Sign in with your authorized
+  administrator account.
+</p>
 
-          <input
-            type="password"
-            value={password}
-            onChange={(event) =>
-              setPassword(
-                event.target.value
-              )
-            }
-            placeholder="Password"
-          />
+         <input
+  type="email"
+  value={email}
+  onChange={(event) =>
+    setEmail(event.target.value)
+  }
+  placeholder="Admin email"
+/>
+
+<input
+  type="password"
+  value={password}
+  onChange={(event) =>
+    setPassword(event.target.value)
+  }
+  placeholder="Password"
+/>
 
           <button
             className="gold-button full"
-            onClick={() =>
-              password === "EDIT_ME"
-                ? setLoggedIn(true)
-                : alert(
-                    "Use EDIT_ME as the temporary password."
-                  )
-            }
+            onClick={async () => {
+              if (!supabase) {
+                alert("Supabase is not configured.");
+                return;
+              }
+            
+              if (!email.trim() || !password) {
+                alert("Enter your admin email and password.");
+                return;
+              }
+            
+              setLoginLoading(true);
+            
+              const { error } =
+                await supabase.auth.signInWithPassword({
+                  email: email.trim(),
+                  password
+                });
+            
+              setLoginLoading(false);
+            
+              if (error) {
+                alert(error.message);
+                return;
+              }
+            
+              setLoggedIn(true);
+            }}
           >
-            Enter dashboard
-          </button>
-
-          <button
-            className="text-button"
-            onClick={exit}
-          >
-            Return to store
-          </button>
+            {loginLoading
+    ? "Signing in..."
+    : "Enter dashboard"}
+</button>
+<button
+  className="text-button"
+  onClick={exit}
+>
+  Return to store
+</button>
         </div>
       </div>
     );
@@ -1192,40 +1293,49 @@ function Admin({
         {tab === "menu" && (
           <section>
             <div className="admin-heading">
-              <div>
-                <p className="eyebrow">
-                  CATALOGUE
-                </p>
+  <div>
+    <p className="eyebrow">
+      CATALOGUE
+    </p>
 
-                <h1>
-                  Menu management
-                </h1>
-              </div>
+    <h1>
+      Menu management
+    </h1>
+  </div>
 
-              <button
-                className="gold-button"
-                onClick={() =>
-                  setMenu([
-                    ...menu,
-                    {
-                      id: `item-${Date.now()}`,
-                      name:
-                        "New menu item",
-                      description:
-                        "EDIT_ME",
-                      category:
-                        "Biryani",
-                      price: 0,
-                      image:
-                        "https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=900&q=85",
-                      available: true
-                    }
-                  ])
-                }
-              >
-                Add item
-              </button>
-            </div>
+  <div className="admin-heading-actions">
+    <button
+      className="gold-button"
+      onClick={async () => {
+        await saveMenuToSupabase(menu);
+        alert("Menu saved successfully.");
+      }}
+    >
+      Save menu
+    </button>
+
+    <button
+      className="gold-button"
+      onClick={() =>
+        setMenu([
+          ...menu,
+          {
+            id: `item-${Date.now()}`,
+            name: "New menu item",
+            description: "EDIT_ME",
+            category: "Biryani",
+            price: 0,
+            image:
+              "https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=900&q=85",
+            available: true
+          }
+        ])
+      }
+    >
+      Add item
+    </button>
+  </div>
+</div>
 
             <div className="admin-table">
               {menu.map((item) => (
