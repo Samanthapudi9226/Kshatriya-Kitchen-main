@@ -126,6 +126,11 @@ textarea { min-height: 90px; resize: vertical; }
 .admin-sidebar button.selected { background: var(--gold); color: var(--maroon-dark); }
 .admin-main { padding: 35px 5%; }
 .admin-heading { display: flex; justify-content: space-between; align-items: center; gap: 15px; margin-bottom: 30px; }
+.admin-heading-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
 .admin-heading h1 { font-size: 48px; margin: 3px 0; }
 .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 18px; }
 .stats-grid > div { background: var(--paper); padding: 25px; display: grid; gap: 8px; box-shadow: var(--shadow); }
