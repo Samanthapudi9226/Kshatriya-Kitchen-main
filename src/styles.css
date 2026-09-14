@@ -24,7 +24,19 @@ img { display: block; max-width: 100%; }
 .brand strong { display: block; font-family: "Cormorant Garamond", serif; font-size: 22px; }
 .brand small { color: var(--gold-light); font-size: 10px; letter-spacing: .08em; }
 .brand-mark { display: grid; place-items: center; width: 43px; height: 43px; border: 1px solid var(--gold); color: var(--gold-light); font-family: "Cormorant Garamond", serif; font-weight: 700; font-size: 17px; }
-nav { display: none; gap: 28px; }
+nav {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+nav button {
+  border: 0;
+  background: none;
+  color: inherit;
+  padding: 8px 4px;
+  font-size: 13px;
+}
 nav button, .text-button { border: 0; background: none; color: inherit; }
 .cart-button { background: var(--gold); color: var(--maroon-dark); border: 0; border-radius: 50%; width: 42px; height: 42px; position: relative; display: grid; place-items: center; }
 .cart-button span { position: absolute; right: -5px; top: -6px; width: 19px; height: 19px; border-radius: 50%; background: white; color: var(--maroon); font-size: 11px; display: grid; place-items: center; }
@@ -144,11 +156,74 @@ textarea { min-height: 90px; resize: vertical; }
 }
 
 @media (max-width: 759px) {
-  .admin-row { align-items: flex-start; flex-wrap: wrap; }
-  .admin-fields { grid-template-columns: 1fr 1fr; width: calc(100% - 95px); }
-  .admin-fields input:nth-child(2), .admin-fields input:nth-child(5) { grid-column: 1 / -1; }
-  .row-actions { width: 100%; display: flex; }
-  .order-card { align-items: flex-start; flex-wrap: wrap; }
+  .topbar {
+    height: auto;
+    min-height: 78px;
+    padding: 12px 14px;
+    gap: 10px;
+  }
+
+  .brand {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .brand strong {
+    font-size: 18px;
+    white-space: nowrap;
+  }
+
+  .brand small {
+    font-size: 8px;
+  }
+
+  .brand-mark {
+    width: 38px;
+    height: 38px;
+    flex-shrink: 0;
+  }
+
+  nav {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  nav button {
+    padding: 7px 5px;
+    font-size: 11px;
+  }
+
+  .cart-button {
+    width: 38px;
+    height: 38px;
+    flex-shrink: 0;
+  }
+
+  .admin-row {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .admin-fields {
+    grid-template-columns: 1fr 1fr;
+    width: calc(100% - 95px);
+  }
+
+  .admin-fields input:nth-child(2),
+  .admin-fields input:nth-child(5) {
+    grid-column: 1 / -1;
+  }
+
+  .row-actions {
+    width: 100%;
+    display: flex;
+  }
+
+  .order-card {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
 }
 
 /* =========================
