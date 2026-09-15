@@ -406,3 +406,69 @@ textarea { min-height: 90px; resize: vertical; }
     gap: 5px;
   }
 }
+.contact-section {
+  padding: 72px 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.contact-inner {
+  width: min(900px, 100%);
+  margin: 0 auto;
+  text-align: center;
+}
+
+.contact-inner h2 {
+  margin: 8px 0 18px;
+}
+
+.contact-owner {
+  margin: 0 0 10px;
+  font-weight: 600;
+}
+
+.contact-address {
+  max-width: 650px;
+  margin: 0 auto 28px;
+  line-height: 1.7;
+  opacity: 0.8;
+}
+
+.contact-links {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.contact-links a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 10px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  text-decoration: none;
+  color: inherit;
+  transition: 0.2s ease;
+}
+
+.contact-links a:hover {
+  transform: translateY(-2px);
+}
+
+@media (max-width: 759px) {
+  .contact-section {
+    padding: 52px 18px;
+  }
+
+  .contact-links {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .contact-links a {
+    width: 100%;
+  }
+}
