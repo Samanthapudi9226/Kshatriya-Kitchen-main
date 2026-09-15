@@ -621,13 +621,31 @@ async function placeOrder(
     return (
       <Admin
         menu={menu}
-        setMenu={setMenu}
         settings={settings}
-        setSettings={setSettings}
         orders={orders}
-        setOrders={setOrders}
-        exit={() => {
+        onClose={() => {
           window.location.href = "/";
+        }}
+        onMenuChange={setMenu}
+        onSettingsChange={setSettings}
+        onOrdersChange={setOrders}
+      />
+    );
+  }
+  if (showProfileSetup) {
+    return (
+      <CustomerProfileSetup
+        user={customerUser}
+        existingProfile={customerProfile}
+        onSaved={(profile) => {
+          setCustomerProfile(profile);
+          setShowProfileSetup(false);
+
+          if (cart.length > 0) {
+            setPage("checkout");
+          } else {
+            setPage("account");
+          }
         }}
       />
     );
@@ -635,30 +653,7 @@ async function placeOrder(
 
   return (
     <div className="app">
-      {showProfileSetup ? (
-        <CustomerProfileSetup
-          user={customerUser}
-          existingProfile={customerProfile}
-          onSaved={(profile) => {
-            setCustomerProfile(profile);
-            setShowProfileSetup(false);
-  
-            if (cart.length > 0) {
-              setPage("checkout");
-            } else {
-              setPage("account");
-            }
-          }}
-        />
-        ) : showLoginPopup ? (
-          <CustomerLogin
-            onClose={() => setShowLoginPopup(false)}
-            onSuccess={() => {
-              setShowLoginPopup(false);
-              setCartOpen(false);
-            }}
-          />
-        ) : null}
+      
   
        
       <header className="topbar">
