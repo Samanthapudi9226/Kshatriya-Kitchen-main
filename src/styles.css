@@ -1042,5 +1042,241 @@ textarea { min-height: 90px; resize: vertical; }
     align-items: center;
     gap: 12px;
   }
-  
+  ```css
+/* =========================================================
+   CUSTOMER ACCOUNT / SAVED PROFILE
+   CLEAN TYPOGRAPHY
+   ========================================================= */
+
+.account-page {
+  width: 100%;
+  min-height: 100vh;
+  padding: 55px 6%;
+  background: var(--cream);
+  color: var(--brown);
+  font-family: "DM Sans", sans-serif;
+}
+
+/* Main account headings */
+
+.account-page h1,
+.account-page h2,
+.account-page h3 {
+  font-family: "Cormorant Garamond", serif;
+  color: var(--maroon-dark);
+  letter-spacing: 0;
+}
+
+/* Normal saved information */
+
+.account-page p,
+.account-page span,
+.account-page div,
+.account-page label {
+  font-family: "DM Sans", sans-serif;
+  letter-spacing: 0;
+}
+
+/* Profile information cards */
+
+.account-page .profile-card,
+.account-page .account-card,
+.account-page .customer-card {
+  font-family: "DM Sans", sans-serif;
+}
+
+/* Labels such as Name, Phone, Address */
+
+.account-page label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+/* Saved values */
+
+.account-page strong {
+  font-family: "DM Sans", sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--brown);
+  letter-spacing: 0;
+  line-height: 1.5;
+}
+
+/* Normal text */
+
+.account-page p {
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--muted);
+}
+
+/* Email / phone / address type text */
+
+.account-page .profile-value,
+.account-page .customer-value,
+.account-page .account-value {
+  font-family: "DM Sans", sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--brown);
+  line-height: 1.6;
+}
+
+/* Address should have comfortable reading spacing */
+
+.account-page .address,
+.account-page .profile-address,
+.account-page .customer-address {
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.7;
+  color: var(--brown);
+}
+
+/* Account buttons */
+
+.account-page button {
+  font-family: "DM Sans", sans-serif;
+  letter-spacing: 0;
+}
+
+/* Edit profile button */
+
+.account-page .gold-button {
+  font-family: "DM Sans", sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* Order history */
+
+.account-page .order-card {
+  font-family: "DM Sans", sans-serif;
+}
+
+.account-page .order-card h3 {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 23px;
+  font-weight: 600;
+  color: var(--maroon-dark);
+}
+
+.account-page .order-card p,
+.account-page .order-card span {
+  font-family: "DM Sans", sans-serif;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+/* Prevent browser/user-agent weird font rendering */
+
+.account-page input,
+.account-page textarea,
+.account-page select,
+.account-page button {
+  font-family: "DM Sans", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* =========================================================
+   PROFILE SETUP — MATCH ACCOUNT TYPOGRAPHY
+   ========================================================= */
+
+.profile-setup-card {
+  font-family: "DM Sans", sans-serif;
+}
+
+.profile-setup-card h1 {
+  font-family: "Cormorant Garamond", serif;
+  font-weight: 600;
+  letter-spacing: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+.profile-setup-card form > label {
+  font-family: "DM Sans", sans-serif;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.profile-setup-card form input,
+.profile-setup-card form textarea {
+  font-family: "DM Sans", sans-serif;
+  font-weight: 400;
+  letter-spacing: 0;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.profile-setup-card form input::placeholder,
+.profile-setup-card form textarea::placeholder {
+  font-family: "DM Sans", sans-serif;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+/* Location text */
+
+.profile-setup-card .location-box {
+  font-family: "DM Sans", sans-serif;
+}
+
+.profile-setup-card .location-box strong {
+  font-family: "DM Sans", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.profile-setup-card .location-box p {
+  font-family: "DM Sans", sans-serif;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+/* Save button */
+
+.profile-setup-card .gold-button {
+  font-family: "DM Sans", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 759px) {
+  .account-page {
+    padding: 35px 18px;
+  }
+
+  .account-page h1 {
+    font-size: 42px;
+  }
+
+  .account-page h2 {
+    font-size: 30px;
+  }
+
+  .account-page p {
+    font-size: 13px;
+  }
+
+  .account-page strong {
+    font-size: 14px;
+  }
+
+  .account-page .profile-value,
+  .account-page .customer-value,
+  .account-page .account-value {
+    font-size: 14px;
+  }
+}
+
+
 
