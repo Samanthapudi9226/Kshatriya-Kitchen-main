@@ -311,38 +311,31 @@ const [showProfileSetup, setShowProfileSetup] = useState(false);
   
     async function handleSession(session) {
       const user = session?.user || null;
-  
+    
       if (!mounted) {
         return;
       }
-  
+    
       setCustomerUser(user);
-  
+    
       if (!user) {
         setCustomerProfile(null);
         setCustomerOrders([]);
         setShowProfileSetup(false);
         return;
       }
-  
+    
       const profile = await loadCustomerProfile(user.id);
-  
+    
       if (!mounted) {
         return;
       }
-  
+    
       setCustomerProfile(profile);
-  
-      if (
-        !profile ||
-        !profile.name ||
-        !profile.phone ||
-        !profile.address
-      ) {
-        setShowProfileSetup(true);
-      } else {
-        setShowProfileSetup(false);
-      }
+    
+      // Do NOT automatically open profile setup
+      // when the website loads or restores a session.
+      // Profile setup is triggered after OTP login.
     }
   
     supabase.auth.getSession().then(({ data }) => {
@@ -653,10 +646,33 @@ async function placeOrder(
 
   return (
     <div className="app">
-      
-  
-       
-      <header className="topbar">
+       {showLoginPopup ? (
+    <CustomerLogin
+      onClose={() => setShowLoginPopup(false)}
+      onSuccess={async (user) => {
+        setShowLoginPopup(false);
+        setCartOpen(false);
+
+        const profile = await loadCustomerProfile(user.id);
+
+        setCustomerUser(user);
+        setCustomerProfile(profile);
+
+        if (
+          !profile ||
+          !profile.name ||
+          !profile.phone ||
+          !profile.address
+        ) {
+          setShowProfileSetup(true);
+        } else {
+          setPage("account");
+        }
+      }}
+    />
+  ) : null}
+
+    <header className="topbar">
   <button
     className="brand"
     onClick={() => setPage("home")}
@@ -2398,7 +2414,7 @@ function CustomerLogin({ onClose, onSuccess }) {
       return;
     }
 
-    onSuccess();
+    onSuccess(data.session.user);
   }
 
   return (
