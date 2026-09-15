@@ -571,23 +571,29 @@ function App() {
       Visit or connect with us
     </h2>
 
-    {settings.ownerName &&
-      settings.ownerName !== "EDIT_ME" && (
-        <p className="contact-owner">
-          Owner: {settings.ownerName}
-        </p>
-      )}
+    <p className="contact-owner">
+      Owner: {settings.ownerName || "-"}
+    </p>
 
-    {settings.address &&
-      settings.address !== "EDIT_ME" && (
-        <p className="contact-address">
-          {settings.address}
-        </p>
-      )}
+    <p className="contact-address">
+      {settings.address || "-"}
+    </p>
+
+    <div className="contact-details">
+      <p>
+        <strong>Phone:</strong>{" "}
+        {settings.phone || "-"}
+      </p>
+
+      <p>
+        <strong>Opening Hours:</strong>{" "}
+        {settings.openingHours || "-"}
+      </p>
+    </div>
 
     <div className="contact-links">
       {settings.mapsUrl &&
-        settings.mapsUrl !== "EDIT_ME" && (
+        settings.mapsUrl !== "-" && (
           <a
             href={settings.mapsUrl}
             target="_blank"
@@ -598,7 +604,7 @@ function App() {
         )}
 
       {settings.instagram &&
-        settings.instagram !== "EDIT_ME" && (
+        settings.instagram !== "-" && (
           <a
             href={settings.instagram}
             target="_blank"
@@ -609,7 +615,7 @@ function App() {
         )}
 
       {settings.facebook &&
-        settings.facebook !== "EDIT_ME" && (
+        settings.facebook !== "-" && (
           <a
             href={settings.facebook}
             target="_blank"
