@@ -261,7 +261,19 @@ function App() {
   );
   const [cart, setCart] = useStoredState("kk-cart", []);
   const [orders, setOrders] = useStoredState("kk-orders", []);
-  const [page, setPage] = useState("home");
+  const [page, setPage] = useState(() => {
+    const path = window.location.pathname;
+  
+    if (path === "/menu") {
+      return "menu";
+    }
+  
+    if (path === "/account") {
+      return "account";
+    }
+  
+    return "home";
+  });
   const [category, setCategory] = useState("All");
   const [selected, setSelected] = useState(null);
   const [admin, setAdmin] = useState(false);
@@ -663,37 +675,36 @@ async function placeOrder(
   </button>
 
   <nav>
-    <button onClick={() => setPage("home")}>
-      Home
-    </button>
+  <button onClick={() => (window.location.href = "/")}>
+    Home
+  </button>
 
-    <button onClick={() => setPage("menu")}>
-      Menu
-    </button>
+  <button onClick={() => (window.location.href = "/menu")}>
+    Menu
+  </button>
 
-    <button onClick={() => setAdmin(true)}>
-      Admin
-    </button>
-  </nav>
+  <button onClick={() => (window.location.href = "/admin")}>
+    Admin
+  </button>
+</nav>
 
   <div className="topbar-actions">
-    {customerUser ? (
-      <button
-        className="account-button"
-        onClick={() => setPage("account")}
-      >
-        <span className="account-icon">👤</span>
-        <span>Account</span>
-      </button>
-    ) : (
-      <button
-        className="login-button"
-        onClick={() => setShowLoginPopup(true)}
-      >
-        <span className="account-icon">👤</span>
-        <span>Login</span>
-      </button>
-    )}
+  {customerUser ? (
+  <button
+    className="account-button"
+    onClick={() => (window.location.href = "/account")}
+  >
+    <span className="account-icon">👤</span>
+    <span>Account</span>
+  </button>
+) : (
+  <button
+    className="login-button"
+    onClick={() => setShowLoginPopup(true)}
+  >
+    <span>Login / Register</span>
+  </button>
+)}
 
     <button
       className="cart-button"
