@@ -64,6 +64,58 @@ async function loadMenuFromSupabase() {
 
   return data.map((row) => row.item);
 }
+async function loadSettingsFromSupabase() {
+  if (!supabase) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("restaurant_settings")
+    .select("settings")
+    .eq("id", 1)
+    .maybeSingle();
+
+  if (error) {
+    console.error(
+      "Could not load restaurant settings from Supabase:",
+      error
+    );
+    return null;
+  }
+
+  if (!data || !data.settings) {
+    return null;
+  }
+
+  return {
+    ...restaurantDefaults,
+    ...data.settings
+  };
+}
+
+async function saveSettingsToSupabase(nextSettings) {
+  if (!supabase) {
+    return false;
+  }
+
+  const { error } = await supabase
+    .from("restaurant_settings")
+    .update({
+      settings: nextSettings,
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", 1);
+
+  if (error) {
+    console.error(
+      "Could not save restaurant settings to Supabase:",
+      error
+    );
+    return false;
+  }
+
+  return true;
+}
 async function saveMenuToSupabase(menuItems) {
   if (!supabase) {
     return;
@@ -121,6 +173,23 @@ function App() {
     }
   
     loadMenu();
+  
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  useEffect(() => {
+    let cancelled = false;
+  
+    async function loadSettings() {
+      const remoteSettings = await loadSettingsFromSupabase();
+  
+      if (!cancelled && remoteSettings) {
+        setSettings(remoteSettings);
+      }
+    }
+  
+    loadSettings();
   
     return () => {
       cancelled = true;
@@ -492,6 +561,66 @@ function App() {
             </button>
           </section>
         )}
+        <section className="contact-section">
+  <div className="contact-inner">
+    <p className="eyebrow">
+      KSHATRIYA KITCHEN
+    </p>
+
+    <h2>
+      Visit or connect with us
+    </h2>
+
+    {settings.ownerName &&
+      settings.ownerName !== "EDIT_ME" && (
+        <p className="contact-owner">
+          Owner: {settings.ownerName}
+        </p>
+      )}
+
+    {settings.address &&
+      settings.address !== "EDIT_ME" && (
+        <p className="contact-address">
+          {settings.address}
+        </p>
+      )}
+
+    <div className="contact-links">
+      {settings.mapsUrl &&
+        settings.mapsUrl !== "EDIT_ME" && (
+          <a
+            href={settings.mapsUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Google Maps
+          </a>
+        )}
+
+      {settings.instagram &&
+        settings.instagram !== "EDIT_ME" && (
+          <a
+            href={settings.instagram}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Instagram
+          </a>
+        )}
+
+      {settings.facebook &&
+        settings.facebook !== "EDIT_ME" && (
+          <a
+            href={settings.facebook}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Facebook
+          </a>
+        )}
+    </div>
+  </div>
+</section>
       </main>
 
       {selected && (
@@ -1474,6 +1603,7 @@ function Admin({
             <div className="settings-grid">
               {[
                 ["name", "Name"],
+                ["ownerName", "Owner name"],
                 ["tagline", "Tagline"],
                 ["phone", "Phone"],
                 ["whatsapp", "WhatsApp"],
@@ -1535,6 +1665,30 @@ function Admin({
                   </label>
                 )
               )}
+
+                <div className="admin-actions">
+              <button
+                className="gold-button"
+                onClick={async () => {
+                  const success =
+                    await saveSettingsToSupabase(
+                      settings
+                    );
+
+                  if (success) {
+                    alert(
+                      "Restaurant settings saved successfully."
+                    );
+                  } else {
+                    alert(
+                      "Could not save restaurant settings."
+                    );
+                  }
+                }}
+              >
+                Save settings
+              </button>
+            </div>
 
               <div className="payment-settings-card">
                 <p className="eyebrow">
