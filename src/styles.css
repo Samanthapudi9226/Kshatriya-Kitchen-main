@@ -674,3 +674,135 @@ textarea { min-height: 90px; resize: vertical; }
       height: 46px;
     }
   }
+  .login-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    padding: 0 18px;
+    border: 1px solid #111;
+    border-radius: 10px;
+    background: #111;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .login-button:hover {
+    background: #000;
+    transform: translateY(-1px);
+  }
+  
+  .account-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    padding: 0 18px;
+    border: 1px solid #111;
+    border-radius: 10px;
+    background: #111;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .account-button:hover {
+    background: #000;
+    transform: translateY(-1px);
+  }
+  .topbar {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  
+  .topbar .brand {
+    flex-shrink: 0;
+  }
+  
+  .topbar .login-button,
+  .topbar .account-button {
+    flex-shrink: 0;
+    margin-left: 4px;
+  }
+  
+  .topbar nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: 20px;
+  }
+  
+  .topbar .topbar-actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+  }
+  .topbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  
+  .topbar .login-button,
+  .topbar .account-button {
+    margin-left: 4px;
+    margin-right: 12px;
+    flex-shrink: 0;
+  }
+  
+  .topbar nav {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: 8px;
+  }
+  
+  .topbar .topbar-actions {
+    margin-left: auto !important;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .topbar {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+  
+  .topbar .brand {
+    flex-shrink: 0;
+  }
+  
+  .topbar .login-button,
+  .topbar .account-button {
+    flex-shrink: 0;
+    margin-left: 4px;
+    margin-right: 0;
+  }
+  
+  .topbar nav {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 0;
+  }
+  
+  .topbar .topbar-actions {
+    margin-left: auto !important;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+
