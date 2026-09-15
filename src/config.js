@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 
 export const restaurantDefaults = {
   name: "Kshatriya Kitchen",
+  ownerName: "EDIT_ME",
   tagline: "Royal Indian flavours, prepared with pride",
   phone: "EDIT_ME",
   whatsapp: "EDIT_ME",
