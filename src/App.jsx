@@ -176,6 +176,8 @@ function App() {
   const [admin, setAdmin] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [deliveryDistance, setDeliveryDistance] = useState(0);
+  const [customerUser, setCustomerUser] = useState(null);
+const [showLoginPopup, setShowLoginPopup] = useState(false);
   useEffect(() => {
     let cancelled = false;
   
@@ -193,6 +195,34 @@ function App() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!supabase) {
+      return;
+    }
+  
+    let mounted = true;
+  
+    supabase.auth.getSession().then(({ data }) => {
+      if (mounted) {
+        setCustomerUser(data.session?.user || null);
+      }
+    });
+  
+    const {
+      data: { subscription }
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (mounted) {
+        setCustomerUser(session?.user || null);
+      }
+    });
+  
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
   
@@ -288,10 +318,20 @@ function App() {
     );
   }
 
-  function startCheckout() {
-    setCartOpen(false);
-    setPage("checkout");
+ function startCheckout() {
+  if (!cart.length) {
+    alert("Your cart is empty.");
+    return;
   }
+
+  if (!customerUser) {
+    setShowLoginPopup(true);
+    return;
+  }
+
+  setPage("checkout");
+  setCartOpen(false);
+}
 
   function placeOrder(customer, payment = null) {
     const order = {
@@ -406,6 +446,16 @@ function App() {
 
   return (
     <div className="app">
+       {showLoginPopup && (
+      <CustomerLogin
+        onClose={() => setShowLoginPopup(false)}
+        onSuccess={() => {
+          setShowLoginPopup(false);
+          setPage("checkout");
+          setCartOpen(false);
+        }}
+      />
+    )}
       <header className="topbar">
         <button
           className="brand"
@@ -2048,4 +2098,176 @@ function AdminDashboard({
     </section>
   );
 }
+function CustomerLogin({ onClose, onSuccess }) {
+  const [email, setEmail] = useState("");
+  const [otp, setOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  async function sendOtp() {
+    const cleanEmail = email.trim().toLowerCase();
+
+    if (!cleanEmail) {
+      alert("Please enter your email address.");
+      return;
+    }
+
+    if (!supabase) {
+      alert("Supabase is not configured.");
+      return;
+    }
+
+    setLoading(true);
+
+    const { error } = await supabase.auth.signInWithOtp({
+      email: cleanEmail,
+      options: {
+        shouldCreateUser: true
+      }
+    });
+
+    setLoading(false);
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    setOtpSent(true);
+    alert("OTP sent to your email.");
+  }
+
+  async function verifyOtp() {
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanOtp = otp.trim();
+
+    if (!cleanOtp) {
+      alert("Please enter the OTP.");
+      return;
+    }
+
+    if (!supabase) {
+      alert("Supabase is not configured.");
+      return;
+    }
+
+    setLoading(true);
+
+    const { data, error } = await supabase.auth.verifyOtp({
+      email: cleanEmail,
+      token: cleanOtp,
+      type: "email"
+    });
+
+    setLoading(false);
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    if (!data.session) {
+      alert("Login was not completed. Please try again.");
+      return;
+    }
+
+    onSuccess();
+  }
+
+  return (
+    <div className="login-overlay">
+      <div className="login-popup">
+        <button
+          className="login-close"
+          onClick={onClose}
+          aria-label="Close"
+        >
+          ×
+        </button>
+
+        <div className="login-icon">
+          KK
+        </div>
+
+        <h2>
+          {otpSent ? "Enter OTP" : "Login to continue"}
+        </h2>
+
+        <p className="login-subtitle">
+          {otpSent
+            ? `We sent a verification code to ${email}`
+            : "Login with your email to continue your order."}
+        </p>
+
+        {!otpSent ? (
+          <>
+            <label className="login-label">
+              Email address
+            </label>
+
+            <input
+              className="login-input"
+              type="email"
+              value={email}
+              onChange={(event) =>
+                setEmail(event.target.value)
+              }
+              placeholder="Enter your email"
+              autoComplete="email"
+            />
+
+            <button
+              className="gold-button full"
+              onClick={sendOtp}
+              disabled={loading}
+            >
+              {loading ? "Sending OTP..." : "Send OTP"}
+            </button>
+          </>
+        ) : (
+          <>
+            <label className="login-label">
+              Enter OTP
+            </label>
+
+            <input
+              className="login-input otp-input"
+              type="text"
+              inputMode="numeric"
+              maxLength="6"
+              value={otp}
+              onChange={(event) =>
+                setOtp(
+                  event.target.value.replace(/\D/g, "")
+                )
+              }
+              placeholder="Enter 6-digit OTP"
+              autoComplete="one-time-code"
+            />
+
+            <button
+              className="gold-button full"
+              onClick={verifyOtp}
+              disabled={loading}
+            >
+              {loading ? "Verifying..." : "Verify & Continue"}
+            </button>
+
+            <button
+              className="login-secondary"
+              onClick={() => {
+                setOtpSent(false);
+                setOtp("");
+              }}
+              disabled={loading}
+            >
+              Change email
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default App;
