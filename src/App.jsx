@@ -25,7 +25,18 @@ import {
 } from "./upi";
 
 const money = (value) =>
-  value > 0 ? `₹${Number(value).toFixed(0)}` : "EDIT PRICE";
+  `₹${Number(value || 0).toFixed(0)}`;
+  function calculateDeliveryCharge(distanceKm) {
+    const distance = Number(distanceKm || 0);
+  
+    if (distance <= 3) {
+      return 0;
+    }
+  
+    const extraKm = Math.ceil(distance - 3);
+  
+    return 40 + (extraKm - 1) * 10;
+  }
 
 function useStoredState(key, initialValue) {
   const [value, setValue] = useState(() => {
@@ -161,6 +172,7 @@ function App() {
   const [selected, setSelected] = useState(null);
   const [admin, setAdmin] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
+  const [deliveryDistance, setDeliveryDistance] = useState(0);
   useEffect(() => {
     let cancelled = false;
   
@@ -217,7 +229,9 @@ function App() {
   );
 
   const delivery =
-    subtotal > 0 ? Number(settings.deliveryCharge || 0) : 0;
+  subtotal > 0
+    ? calculateDeliveryCharge(deliveryDistance)
+    : 0;
 
   const service =
     subtotal > 0 ? Number(settings.serviceCharge || 0) : 0;
@@ -530,6 +544,8 @@ function App() {
             service={service}
             tax={tax}
             settings={settings}
+            deliveryDistance={deliveryDistance}
+            setDeliveryDistance={setDeliveryDistance}
             placeOrder={placeOrder}
             back={() => setPage("menu")}
           />
@@ -854,6 +870,8 @@ function Checkout({
   service,
   tax,
   settings,
+  deliveryDistance,
+  setDeliveryDistance,
   placeOrder,
   back
 }) {
@@ -984,6 +1002,26 @@ function Checkout({
               onChange={update}
               placeholder="Complete delivery address"
             />
+          </label>
+          <label>
+            Delivery distance (km)
+
+            <input
+              type="number"
+              min="0"
+              step="0.1"
+              value={deliveryDistance}
+              onChange={(event) =>
+                setDeliveryDistance(
+                  Number(event.target.value || 0)
+                )
+              }
+              placeholder="Example: 4.5"
+            />
+
+            <span className="optional">
+              Up to 3 km free. After 3 km, delivery starts at ₹40 and increases by ₹10 per additional km.
+            </span>
           </label>
 
           <label>
