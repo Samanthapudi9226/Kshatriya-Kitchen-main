@@ -160,6 +160,9 @@ async function saveMenuToSupabase(menuItems) {
 }
 
 function App() {
+  const isAdminPath =
+    window.location.pathname === "/admin";
+
   const [menu, setMenu] = useStoredState("kk-menu", initialMenu);
   const [settings, setSettings] = useStoredState(
     "kk-settings",
@@ -381,6 +384,22 @@ function App() {
         orders={orders}
         setOrders={setOrders}
         exit={() => setAdmin(false)}
+      />
+    );
+  }
+
+  if (isAdminPath) {
+    return (
+      <Admin
+        menu={menu}
+        setMenu={setMenu}
+        settings={settings}
+        setSettings={setSettings}
+        orders={orders}
+        setOrders={setOrders}
+        exit={() => {
+          window.location.href = "/";
+        }}
       />
     );
   }
