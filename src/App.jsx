@@ -127,6 +127,97 @@ async function saveSettingsToSupabase(nextSettings) {
 
   return true;
 }
+
+async function loadCustomerProfile(userId) {
+  if (!supabase || !userId) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("customers")
+    .select("*")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (error) {
+    console.error(
+      "Could not load customer profile:",
+      error
+    );
+    return null;
+  }
+
+  return data || null;
+}
+
+async function saveCustomerProfile(profile) {
+  if (!supabase || !profile?.id) {
+    return false;
+  }
+
+  const { error } = await supabase
+    .from("customers")
+    .upsert(
+      {
+        id: profile.id,
+        email: profile.email,
+        name: profile.name,
+        phone: profile.phone,
+        address: profile.address,
+        latitude: profile.latitude,
+        longitude: profile.longitude,
+        updated_at: new Date().toISOString()
+      },
+      {
+        onConflict: "id"
+      }
+    );
+
+  if (error) {
+    console.error(
+      "Could not save customer profile:",
+      error
+    );
+    return false;
+  }
+
+  return true;
+}
+async function loadCustomerOrders(userId) {
+  if (!supabase || !userId) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("orders")
+    .select(
+      "id, order_data, created_at, updated_at"
+    )
+    .eq(
+      "order_data->>user_id",
+      userId
+    )
+    .order("created_at", {
+      ascending: false
+    });
+
+  if (error) {
+    console.error(
+      "Could not load customer orders:",
+      error
+    );
+    return [];
+  }
+
+  return (data || []).map((row) => ({
+    ...(row.order_data || {}),
+    id: row.id,
+    createdAt:
+      row.order_data?.createdAt ||
+      row.created_at
+  }));
+}
+
 async function saveMenuToSupabase(menuItems) {
   if (!supabase) {
     return;
@@ -177,7 +268,10 @@ function App() {
   const [cartOpen, setCartOpen] = useState(false);
   const [deliveryDistance, setDeliveryDistance] = useState(0);
   const [customerUser, setCustomerUser] = useState(null);
+const [customerProfile, setCustomerProfile] = useState(null);
 const [showLoginPopup, setShowLoginPopup] = useState(false);
+const [customerOrders, setCustomerOrders] = useState([]);
+const [showProfileSetup, setShowProfileSetup] = useState(false);
   useEffect(() => {
     let cancelled = false;
   
@@ -203,26 +297,84 @@ const [showLoginPopup, setShowLoginPopup] = useState(false);
   
     let mounted = true;
   
-    supabase.auth.getSession().then(({ data }) => {
-      if (mounted) {
-        setCustomerUser(data.session?.user || null);
+    async function handleSession(session) {
+      const user = session?.user || null;
+  
+      if (!mounted) {
+        return;
       }
+  
+      setCustomerUser(user);
+  
+      if (!user) {
+        setCustomerProfile(null);
+        setCustomerOrders([]);
+        setShowProfileSetup(false);
+        return;
+      }
+  
+      const profile = await loadCustomerProfile(user.id);
+  
+      if (!mounted) {
+        return;
+      }
+  
+      setCustomerProfile(profile);
+  
+      if (
+        !profile ||
+        !profile.name ||
+        !profile.phone ||
+        !profile.address
+      ) {
+        setShowProfileSetup(true);
+      } else {
+        setShowProfileSetup(false);
+      }
+    }
+  
+    supabase.auth.getSession().then(({ data }) => {
+      handleSession(data.session);
     });
   
     const {
       data: { subscription }
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (mounted) {
-        setCustomerUser(session?.user || null);
+    } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        handleSession(session);
       }
-    });
+    );
   
     return () => {
       mounted = false;
       subscription.unsubscribe();
     };
   }, []);
-
+  useEffect(() => {
+    let cancelled = false;
+  
+    async function loadOrders() {
+      if (!customerUser?.id) {
+        setCustomerOrders([]);
+        return;
+      }
+  
+      const remoteOrders =
+        await loadCustomerOrders(
+          customerUser.id
+        );
+  
+      if (!cancelled) {
+        setCustomerOrders(remoteOrders);
+      }
+    }
+  
+    loadOrders();
+  
+    return () => {
+      cancelled = true;
+    };
+  }, [customerUser]);
   useEffect(() => {
     let cancelled = false;
   
@@ -333,22 +485,47 @@ const [showLoginPopup, setShowLoginPopup] = useState(false);
   setCartOpen(false);
 }
 
-  function placeOrder(customer, payment = null) {
-    const order = {
-      id: `KK-${Date.now().toString().slice(-6)}`,
-      customer,
-      items: cart,
-      total,
-      payment,
-      status: "Received",
-      createdAt: new Date().toISOString()
-    };
+async function placeOrder(
+  customer,
+  payment = null
+) {
+  const order = {
+    id: `KK-${Date.now().toString().slice(-6)}`,
+    user_id: customerUser?.id || null,
+    customer,
+    items: cart,
+    total,
+    payment,
+    status: "Received",
+    createdAt: new Date().toISOString()
+  };
 
-    setOrders((current) => [order, ...current]);
-    setCart([]);
-    setPage("confirmation");
-    sendWhatsApp(order);
+  setOrders((current) => [
+    order,
+    ...current
+  ]);
+
+  if (supabase && customerUser?.id) {
+    const { error } = await supabase
+      .from("orders")
+      .insert({
+        id: order.id,
+        order_data: order,
+        updated_at: new Date().toISOString()
+      });
+
+    if (error) {
+      console.error(
+        "Could not save order to Supabase:",
+        error
+      );
+    }
   }
+
+  setCart([]);
+  setPage("confirmation");
+  sendWhatsApp(order);
+}
 
   function sendWhatsApp(order) {
     const configured = String(
@@ -446,51 +623,87 @@ const [showLoginPopup, setShowLoginPopup] = useState(false);
 
   return (
     <div className="app">
-       {showLoginPopup && (
-      <CustomerLogin
-        onClose={() => setShowLoginPopup(false)}
-        onSuccess={() => {
-          setShowLoginPopup(false);
-          setPage("checkout");
-          setCartOpen(false);
-        }}
-      />
-    )}
+      {showProfileSetup ? (
+        <CustomerProfileSetup
+          user={customerUser}
+          existingProfile={customerProfile}
+          onSaved={(profile) => {
+            setCustomerProfile(profile);
+            setShowProfileSetup(false);
+  
+            if (cart.length > 0) {
+              setPage("checkout");
+            } else {
+              setPage("account");
+            }
+          }}
+        />
+        ) : showLoginPopup ? (
+          <CustomerLogin
+            onClose={() => setShowLoginPopup(false)}
+            onSuccess={() => {
+              setShowLoginPopup(false);
+              setCartOpen(false);
+            }}
+          />
+        ) : null}
+  
+       
       <header className="topbar">
-        <button
-          className="brand"
-          onClick={() => setPage("home")}
-        >
-          <span className="brand-mark">KK</span>
+  <button
+    className="brand"
+    onClick={() => setPage("home")}
+  >
+    <span className="brand-mark">KK</span>
 
-          <span>
-            <strong>{settings.name}</strong>
-            <small>{settings.tagline}</small>
-          </span>
-        </button>
+    <span>
+      <strong>{settings.name}</strong>
+      <small>{settings.tagline}</small>
+    </span>
+  </button>
 
-        <nav>
-          <button onClick={() => setPage("home")}>
-            Home
-          </button>
+  <nav>
+    <button onClick={() => setPage("home")}>
+      Home
+    </button>
 
-          <button onClick={() => setPage("menu")}>
-            Menu
-          </button>
+    <button onClick={() => setPage("menu")}>
+      Menu
+    </button>
 
-          <button onClick={() => setAdmin(true)}>
-            Admin
-          </button>
-        </nav>
+    <button onClick={() => setAdmin(true)}>
+      Admin
+    </button>
+  </nav>
 
-        <button
-          className="cart-button"
-          onClick={() => setCartOpen(true)}
-        >
-          <ShoppingBag size={20} />
-          <span>{cartCount}</span>
-        </button>
-      </header>
+  <div className="topbar-actions">
+    {customerUser ? (
+      <button
+        className="account-button"
+        onClick={() => setPage("account")}
+      >
+        <span className="account-icon">👤</span>
+        <span>Account</span>
+      </button>
+    ) : (
+      <button
+        className="login-button"
+        onClick={() => setShowLoginPopup(true)}
+      >
+        <span className="account-icon">👤</span>
+        <span>Login</span>
+      </button>
+    )}
+
+    <button
+      className="cart-button"
+      onClick={() => setCartOpen(true)}
+    >
+      <ShoppingBag size={20} />
+      <span>{cartCount}</span>
+    </button>
+  </div>
+</header>
 
       <main>
         {page === "home" && (
@@ -613,12 +826,31 @@ const [showLoginPopup, setShowLoginPopup] = useState(false);
             service={service}
             tax={tax}
             settings={settings}
+            customer={customerProfile}
             deliveryDistance={deliveryDistance}
             setDeliveryDistance={setDeliveryDistance}
             placeOrder={placeOrder}
             back={() => setPage("menu")}
           />
         )}
+        {page === "account" && (
+  <CustomerAccount
+    user={customerUser}
+    profile={customerProfile}
+    orders={customerOrders}
+    onBack={() => setPage("home")}
+    onEditProfile={() => {
+      setShowProfileSetup(true);
+    }}
+    onLogout={() => {
+      setCustomerUser(null);
+      setCustomerProfile(null);
+      setCustomerOrders([]);
+      setShowProfileSetup(false);
+      setPage("home");
+    }}
+  />
+)}
 
         {page === "confirmation" && (
           <section className="confirmation">
@@ -939,18 +1171,13 @@ function Checkout({
   service,
   tax,
   settings,
+  customer,
   deliveryDistance,
   setDeliveryDistance,
   placeOrder,
   back
 }) {
-  const [customer, setCustomer] =
-    useState({
-      name: "",
-      phone: "",
-      address: "",
-      notes: ""
-    });
+  const [notes, setNotes] = useState("");
 
   const [transactionId, setTransactionId] =
     useState("");
@@ -958,24 +1185,16 @@ function Checkout({
   const [paymentError, setPaymentError] =
     useState("");
 
-  function update(event) {
-    setCustomer({
-      ...customer,
-      [event.target.name]:
-        event.target.value
-    });
-  }
-
   function submit(event) {
     event.preventDefault();
 
     if (
-      !customer.name ||
-      !customer.phone ||
-      !customer.address
+      !customer?.name ||
+      !customer?.phone ||
+      !customer?.address
     ) {
       alert(
-        "Please enter your name, phone number and delivery address."
+        "Please complete your customer profile before placing an order."
       );
       return;
     }
@@ -991,9 +1210,7 @@ function Checkout({
       }
 
       if (
-        !isValidTransactionId(
-          transactionId
-        )
+        !isValidTransactionId(transactionId)
       ) {
         setPaymentError(
           "Please enter a valid UPI Transaction ID."
@@ -1008,7 +1225,13 @@ function Checkout({
       });
     }
 
-    placeOrder(customer, payment);
+    placeOrder(
+      {
+        ...customer,
+        notes
+      },
+      payment
+    );
   }
 
   return (
@@ -1036,42 +1259,35 @@ function Checkout({
           className="customer-form"
           onSubmit={submit}
         >
-          <h2>
-            Customer details
-          </h2>
+          <div className="saved-customer-box">
+            <p className="eyebrow">
+              DELIVERY DETAILS
+            </p>
 
-          <label>
-            Name
+            <h2>
+              Delivering to
+            </h2>
 
-            <input
-              name="name"
-              value={customer.name}
-              onChange={update}
-              placeholder="Your name"
-            />
-          </label>
+            <div className="saved-customer-detail">
+              <strong>
+                {customer?.name}
+              </strong>
 
-          <label>
-            Phone number
+              <span>
+                {customer?.phone}
+              </span>
 
-            <input
-              name="phone"
-              value={customer.phone}
-              onChange={update}
-              placeholder="Your phone number"
-            />
-          </label>
+              <span>
+                {customer?.address}
+              </span>
+            </div>
 
-          <label>
-            Delivery address
+            <p className="saved-profile-note">
+              Your saved account details will be
+              used for this order.
+            </p>
+          </div>
 
-            <textarea
-              name="address"
-              value={customer.address}
-              onChange={update}
-              placeholder="Complete delivery address"
-            />
-          </label>
           <label>
             Delivery distance (km)
 
@@ -1082,14 +1298,18 @@ function Checkout({
               value={deliveryDistance}
               onChange={(event) =>
                 setDeliveryDistance(
-                  Number(event.target.value || 0)
+                  Number(
+                    event.target.value || 0
+                  )
                 )
               }
               placeholder="Example: 4.5"
             />
 
             <span className="optional">
-              Up to 3 km free. After 3 km, delivery starts at ₹40 and increases by ₹10 per additional km.
+              Up to 3 km free. After 3 km, delivery
+              starts at ₹40 and increases by ₹10
+              per additional km.
             </span>
           </label>
 
@@ -1100,9 +1320,10 @@ function Checkout({
             </span>
 
             <textarea
-              name="notes"
-              value={customer.notes}
-              onChange={update}
+              value={notes}
+              onChange={(event) =>
+                setNotes(event.target.value)
+              }
               placeholder="Any special instructions?"
             />
           </label>
@@ -1139,8 +1360,7 @@ function Checkout({
               )}
 
               {settings.upiId &&
-                settings.upiId !==
-                  "EDIT_ME" && (
+                settings.upiId !== "EDIT_ME" && (
                   <div className="upi-id-display">
                     <span>
                       UPI ID
@@ -1206,8 +1426,7 @@ function Checkout({
               key={item.id}
             >
               <span>
-                {item.name} ×{" "}
-                {item.quantity}
+                {item.name} × {item.quantity}
               </span>
 
               <strong>
@@ -1286,6 +1505,8 @@ function Checkout({
     </section>
   );
 }
+  
+  
 
 function Admin({
   menu,
@@ -2267,6 +2488,494 @@ function CustomerLogin({ onClose, onSuccess }) {
         )}
       </div>
     </div>
+  );
+}
+
+function CustomerProfileSetup({
+  user,
+  existingProfile,
+  onSaved
+}) {
+  const [name, setName] = useState(
+    existingProfile?.name || ""
+  );
+
+  const [phone, setPhone] = useState(
+    existingProfile?.phone || ""
+  );
+
+  const [address, setAddress] = useState(
+    existingProfile?.address || ""
+  );
+
+  const [latitude, setLatitude] = useState(
+    existingProfile?.latitude || null
+  );
+
+  const [longitude, setLongitude] = useState(
+    existingProfile?.longitude || null
+  );
+
+  const [locationLoading, setLocationLoading] =
+    useState(false);
+
+  const [saving, setSaving] = useState(false);
+
+  function useCurrentLocation() {
+    if (!navigator.geolocation) {
+      alert(
+        "Location is not supported by this browser."
+      );
+      return;
+    }
+
+    setLocationLoading(true);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+
+        setLatitude(lat);
+        setLongitude(lng);
+        setLocationLoading(false);
+
+        alert(
+          "Your current location has been saved."
+        );
+      },
+      (error) => {
+        setLocationLoading(false);
+
+        if (error.code === 1) {
+          alert(
+            "Location permission was denied. Please allow location access in your browser settings."
+          );
+        } else if (error.code === 2) {
+          alert(
+            "Your location could not be determined. Please try again."
+          );
+        } else {
+          alert(
+            "Could not get your location. Please try again."
+          );
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 0
+      }
+    );
+  }
+
+  async function saveProfile(event) {
+    event.preventDefault();
+
+    const cleanName = name.trim();
+    const cleanPhone = phone.trim();
+    const cleanAddress = address.trim();
+
+    if (!cleanName) {
+      alert("Please enter your name.");
+      return;
+    }
+
+    if (!cleanPhone) {
+      alert("Please enter your phone number.");
+      return;
+    }
+
+    if (!cleanAddress) {
+      alert("Please enter your delivery address.");
+      return;
+    }
+
+    if (!user?.id) {
+      alert(
+        "Your login session could not be found. Please login again."
+      );
+      return;
+    }
+
+    setSaving(true);
+
+    const profile = {
+      id: user.id,
+      email: user.email || "",
+      name: cleanName,
+      phone: cleanPhone,
+      address: cleanAddress,
+      latitude,
+      longitude
+    };
+
+    const success =
+      await saveCustomerProfile(profile);
+
+    setSaving(false);
+
+    if (!success) {
+      alert(
+        "Could not save your profile. Please try again."
+      );
+      return;
+    }
+
+    onSaved(profile);
+  }
+
+  return (
+    <div className="profile-setup-page">
+      <div className="profile-setup-card">
+        <div className="profile-setup-icon">
+          KK
+        </div>
+
+        <p className="eyebrow">
+          WELCOME TO KSHATRIYA KITCHEN
+        </p>
+
+        <h1>
+          Complete your profile
+        </h1>
+
+        <p className="profile-setup-subtitle">
+          We need these details once. Your saved
+          details will be used automatically for
+          future orders.
+        </p>
+
+        <form onSubmit={saveProfile}>
+          <label>
+            Name
+
+            <input
+              type="text"
+              value={name}
+              onChange={(event) =>
+                setName(event.target.value)
+              }
+              placeholder="Enter your name"
+              autoComplete="name"
+            />
+          </label>
+
+          <label>
+            Phone number
+
+            <input
+              type="tel"
+              value={phone}
+              onChange={(event) =>
+                setPhone(event.target.value)
+              }
+              placeholder="Enter your phone number"
+              autoComplete="tel"
+            />
+          </label>
+
+          <label>
+            Delivery address
+
+            <textarea
+              value={address}
+              onChange={(event) =>
+                setAddress(event.target.value)
+              }
+              placeholder="Enter your complete delivery address"
+              autoComplete="street-address"
+            />
+          </label>
+
+          <div className="location-box">
+            <div>
+              <strong>
+                Delivery location
+              </strong>
+
+              <p>
+                Allow location access so we can
+                save your delivery location.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              className="location-button"
+              onClick={useCurrentLocation}
+              disabled={locationLoading}
+            >
+              <MapPin size={18} />
+
+              {locationLoading
+                ? "Getting location..."
+                : latitude && longitude
+                ? "Location Saved"
+                : "Use Current Location"}
+            </button>
+          </div>
+
+          {latitude && longitude && (
+            <p className="location-success">
+              ✓ Your current location has been saved.
+            </p>
+          )}
+
+          <button
+            type="submit"
+            className="gold-button full"
+            disabled={saving}
+          >
+            {saving
+              ? "Saving profile..."
+              : "Save & Continue"}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function CustomerAccount({
+  user,
+  profile,
+  orders,
+  onBack,
+  onEditProfile,
+  onLogout
+}) {
+  async function logout() {
+    if (!supabase) {
+      return;
+    }
+
+    const { error } =
+      await supabase.auth.signOut();
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    onLogout();
+  }
+
+  return (
+    <section className="account-page">
+      <button
+        className="back-link"
+        onClick={onBack}
+      >
+        <ArrowLeft size={16} />
+        Back
+      </button>
+
+      <div className="page-heading compact">
+        <p className="eyebrow">
+          MY ACCOUNT
+        </p>
+
+        <h1>
+          Welcome, {profile?.name || "Customer"}
+        </h1>
+
+        <p>
+          Manage your details and view your
+          previous orders.
+        </p>
+      </div>
+
+      <div className="account-layout">
+        <div className="account-card">
+          <div className="account-card-header">
+            <div>
+              <p className="eyebrow">
+                PROFILE
+              </p>
+
+              <h2>
+                Personal details
+              </h2>
+            </div>
+
+            <button
+              className="account-edit-button"
+              onClick={onEditProfile}
+            >
+              Edit
+            </button>
+          </div>
+
+          <div className="account-detail">
+            <span>
+              Name
+            </span>
+
+            <strong>
+              {profile?.name || "-"}
+            </strong>
+          </div>
+
+          <div className="account-detail">
+            <span>
+              Email
+            </span>
+
+            <strong>
+              {user?.email || "-"}
+            </strong>
+          </div>
+
+          <div className="account-detail">
+            <span>
+              Phone
+            </span>
+
+            <strong>
+              {profile?.phone || "-"}
+            </strong>
+          </div>
+
+          <div className="account-detail">
+            <span>
+              Delivery address
+            </span>
+
+            <strong>
+              {profile?.address || "-"}
+            </strong>
+          </div>
+
+          <div className="account-detail">
+            <span>
+              Delivery location
+            </span>
+
+            <strong>
+              {profile?.latitude &&
+              profile?.longitude
+                ? "Location saved"
+                : "Location not saved"}
+            </strong>
+          </div>
+
+          {profile?.latitude &&
+            profile?.longitude && (
+              <a
+                className="account-location-link"
+                href={`https://www.google.com/maps?q=${profile.latitude},${profile.longitude}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <MapPin size={16} />
+                View saved location
+              </a>
+            )}
+
+          <button
+            className="logout-button"
+            onClick={logout}
+          >
+            Logout
+          </button>
+        </div>
+
+        <div className="account-card orders-card">
+          <div className="account-card-header">
+            <div>
+              <p className="eyebrow">
+                ORDER HISTORY
+              </p>
+
+              <h2>
+                Previous orders
+              </h2>
+            </div>
+
+            <span className="order-count">
+              {orders.length}
+            </span>
+          </div>
+
+          {!orders.length ? (
+            <div className="empty-orders">
+              <Package size={36} />
+
+              <h3>
+                No orders yet
+              </h3>
+
+              <p>
+                Your previous orders will
+                appear here.
+              </p>
+            </div>
+          ) : (
+            <div className="orders-list">
+              {orders.map((order) => (
+                <div
+                  className="account-order"
+                  key={order.id}
+                >
+                  <div className="account-order-top">
+                    <div>
+                      <strong>
+                        {order.id}
+                      </strong>
+
+                      <span>
+                        {order.createdAt
+                          ? new Date(
+                              order.createdAt
+                            ).toLocaleString(
+                              "en-IN",
+                              {
+                                dateStyle:
+                                  "medium",
+                                timeStyle:
+                                  "short"
+                              }
+                            )
+                          : "-"}
+                      </span>
+                    </div>
+
+                    <strong>
+                      {money(order.total)}
+                    </strong>
+                  </div>
+
+                  <div className="account-order-items">
+                    {(order.items || []).map(
+                      (item) => (
+                        <span
+                          key={item.id}
+                        >
+                          {item.name} ×{" "}
+                          {item.quantity}
+                        </span>
+                      )
+                    )}
+                  </div>
+
+                  <div className="account-order-bottom">
+                    <span>
+                      Status
+                    </span>
+
+                    <strong>
+                      {order.status ||
+                        "Received"}
+                    </strong>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
   );
 }
 
