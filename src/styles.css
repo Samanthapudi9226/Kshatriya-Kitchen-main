@@ -1277,6 +1277,167 @@ textarea { min-height: 90px; resize: vertical; }
     font-size: 14px;
   }
 }
+/* =========================================================
+   ACCOUNT PAGE — VISUAL DESIGN
+   ========================================================= */
+
+   .account-page {
+    width: 100%;
+    min-height: 100vh;
+    padding: 55px 6%;
+    background: var(--cream);
+    color: var(--brown);
+  }
+  
+  .account-page > * {
+    max-width: 1100px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  
+  .account-page h1 {
+    margin-bottom: 10px;
+  }
+  
+  .account-page h2 {
+    margin-top: 30px;
+    margin-bottom: 18px;
+  }
+  
+  .account-page .profile-card,
+  .account-page .account-card,
+  .account-page .customer-card {
+    background: #fff;
+    border: 1px solid rgba(80, 35, 25, 0.10);
+    border-radius: 18px;
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 25px rgba(60, 30, 20, 0.06);
+  }
+  
+  .account-page .order-card {
+    background: #fff;
+    border: 1px solid rgba(80, 35, 25, 0.10);
+    border-radius: 18px;
+    padding: 22px;
+    margin-bottom: 16px;
+    box-shadow: 0 6px 20px rgba(60, 30, 20, 0.05);
+  }
+  
+  .account-page .gold-button {
+    border-radius: 10px;
+    padding: 11px 18px;
+    cursor: pointer;
+  }
+  
+  .account-page label {
+    display: block;
+    margin-bottom: 5px;
+  }
+  
+  .account-page strong {
+    display: block;
+  }
+  
+  
+  /* =========================================================
+     PROFILE SETUP — VISUAL DESIGN
+     ========================================================= */
+  
+  .profile-setup-page {
+    width: 100%;
+    min-height: 100vh;
+    padding: 50px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--cream);
+  }
+  
+  .profile-setup-card {
+    width: 100%;
+    max-width: 560px;
+    background: #fff;
+    border: 1px solid rgba(80, 35, 25, 0.10);
+    border-radius: 22px;
+    padding: 38px;
+    box-shadow: 0 15px 45px rgba(60, 30, 20, 0.10);
+  }
+  
+  .profile-setup-card h1 {
+    margin: 0 0 8px;
+  }
+  
+  .profile-setup-card form > label {
+    display: block;
+    margin-top: 18px;
+    margin-bottom: 7px;
+  }
+  
+  .profile-setup-card form input,
+  .profile-setup-card form textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 13px 14px;
+    border: 1px solid rgba(80, 35, 25, 0.18);
+    border-radius: 10px;
+    background: #fff;
+    color: var(--brown);
+    outline: none;
+  }
+  
+  .profile-setup-card form input:focus,
+  .profile-setup-card form textarea:focus {
+    border-color: var(--maroon-dark);
+  }
+  
+  .profile-setup-card .location-box {
+    margin-top: 18px;
+    padding: 16px;
+    border-radius: 12px;
+    background: rgba(120, 70, 35, 0.06);
+  }
+  
+  .profile-setup-card .gold-button.full {
+    width: 100%;
+    margin-top: 22px;
+  }
+  
+  
+  /* =========================================================
+     MOBILE
+     ========================================================= */
+  
+  @media (max-width: 759px) {
+  
+    .account-page {
+      padding: 30px 16px;
+    }
+  
+    .account-page .profile-card,
+    .account-page .account-card,
+    .account-page .customer-card,
+    .account-page .order-card {
+      padding: 18px;
+      border-radius: 15px;
+    }
+  
+    .profile-setup-page {
+      padding: 20px 14px;
+      align-items: flex-start;
+    }
+  
+    .profile-setup-card {
+      max-width: none;
+      margin-top: 10px;
+      padding: 24px 18px;
+      border-radius: 18px;
+    }
+  
+    .profile-setup-card h1 {
+      font-size: 34px;
+    }
+  }
 
 
 
