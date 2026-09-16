@@ -614,14 +614,14 @@ async function placeOrder(
     return (
       <Admin
         menu={menu}
+        setMenu={setMenu}
         settings={settings}
+        setSettings={setSettings}
         orders={orders}
-        onClose={() => {
+        setOrders={setOrders}
+        exit={() => {
           window.location.href = "/";
         }}
-        onMenuChange={setMenu}
-        onSettingsChange={setSettings}
-        onOrdersChange={setOrders}
       />
     );
   }
