@@ -948,7 +948,7 @@ if (admin) {
       </button>
     )}
 
-```jsx
+
 <button
   className={`cart-button ${
     cartCount > 0 ? "has-items" : "is-empty"
