@@ -948,14 +948,22 @@ if (admin) {
       </button>
     )}
 
-    <button
-      className="cart-button"
-      onClick={() => setCartOpen(true)}
-    >
-      <ShoppingBag size={20} />
-      <span>{cartCount}</span>
-    </button>
-  </div>
+```jsx
+<button
+  className={`cart-button ${
+    cartCount > 0 ? "has-items" : "is-empty"
+  }`}
+  onClick={() => setCartOpen(true)}
+  aria-label={
+    cartCount > 0
+      ? `Cart with ${cartCount} item${cartCount === 1 ? "" : "s"}`
+      : "Cart is empty"
+  }
+>
+  <ShoppingBag size={20} />
+  <span>{cartCount}</span>
+</button>
+</div>
 
   {/* Mobile Navigation */}
   {mobileMenuOpen && (
