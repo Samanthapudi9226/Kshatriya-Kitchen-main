@@ -822,13 +822,31 @@ async function placeOrder(
               </div>
 
               <div className="hero-art">
-                <div className="hero-ring" />
+  <div className="hero-ring" />
 
-                <img
-                  src={menu[0]?.image}
-                  alt="Royal biryani"
-                />
-              </div>
+  <div
+    className="hero-image-slider"
+    style={{
+      "--hero-animation-duration": `${
+        Math.max(menu.filter((item) => item.image).length, 1) * 4
+      }s`,
+    }}
+  >
+    {menu
+      .filter((item) => item.image)
+      .map((item, index, images) => (
+        <img
+          key={item.id || index}
+          src={item.image}
+          alt={item.item || "Kshatriya Kitchen food"}
+          className="hero-slide-image"
+          style={{
+            animationDelay: `${index * 4}s`,
+          }}
+        />
+      ))}
+  </div>
+</div>
             </section>
 
             <section className="intro-section">
