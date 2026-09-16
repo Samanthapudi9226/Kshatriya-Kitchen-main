@@ -2423,32 +2423,80 @@ function AdminDashboard({
   );
 }
 function CustomerLogin({ onClose, onSuccess }) {
-  const [email, setEmail] = useState("");
+  const [loginValue, setLoginValue] = useState("");
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  async function sendOtp() {
-    const cleanEmail = email.trim().toLowerCase();
+  // Automatically detect Email or WhatsApp number
+  const isPhone = /^\s*[0-9]/.test(loginValue);
 
+  const cleanPhone = loginValue
+    .replace(/\D/g, "")
+    .slice(0, 10);
+
+  const cleanEmail = loginValue.trim().toLowerCase();
+
+  async function sendOtp() {
+    // ==============================
+    // WHATSAPP LOGIN
+    // ==============================
+    if (isPhone) {
+      if (cleanPhone.length !== 10) {
+        alert(
+          "Please enter a valid 10-digit WhatsApp number."
+        );
+        return;
+      }
+
+      /*
+       * WhatsApp OTP provider will be connected here.
+       *
+       * Supabase email OTP cannot send a WhatsApp OTP.
+       * We will connect the actual WhatsApp OTP provider
+       * separately.
+       */
+
+      alert(
+        `WhatsApp OTP will be sent to +91 ${cleanPhone} once WhatsApp OTP is connected.`
+      );
+
+      return;
+    }
+
+    // ==============================
+    // EMAIL LOGIN
+    // ==============================
     if (!cleanEmail) {
-      alert("Please enter your email address.");
+      alert(
+        "Please enter your email address or WhatsApp number."
+      );
+      return;
+    }
+
+    if (!cleanEmail.includes("@")) {
+      alert(
+        "Please enter a valid email address."
+      );
       return;
     }
 
     if (!supabase) {
-      alert("Supabase is not configured.");
+      alert(
+        "Supabase is not configured."
+      );
       return;
     }
 
     setLoading(true);
 
-    const { error } = await supabase.auth.signInWithOtp({
-      email: cleanEmail,
-      options: {
-        shouldCreateUser: true
-      }
-    });
+    const { error } =
+      await supabase.auth.signInWithOtp({
+        email: cleanEmail,
+        options: {
+          shouldCreateUser: true
+        }
+      });
 
     setLoading(false);
 
@@ -2458,30 +2506,50 @@ function CustomerLogin({ onClose, onSuccess }) {
     }
 
     setOtpSent(true);
-    alert("OTP sent to your email.");
+
+    alert(
+      "OTP sent to your email."
+    );
   }
 
   async function verifyOtp() {
-    const cleanEmail = email.trim().toLowerCase();
     const cleanOtp = otp.trim();
 
     if (!cleanOtp) {
-      alert("Please enter the OTP.");
+      alert(
+        "Please enter the OTP."
+      );
       return;
     }
 
     if (!supabase) {
-      alert("Supabase is not configured.");
+      alert(
+        "Supabase is not configured."
+      );
       return;
     }
 
+    // ==============================
+    // WHATSAPP OTP VERIFICATION
+    // ==============================
+    if (isPhone) {
+      alert(
+        "WhatsApp OTP verification will be connected in the next step."
+      );
+      return;
+    }
+
+    // ==============================
+    // EMAIL OTP VERIFICATION
+    // ==============================
     setLoading(true);
 
-    const { data, error } = await supabase.auth.verifyOtp({
-      email: cleanEmail,
-      token: cleanOtp,
-      type: "email"
-    });
+    const { data, error } =
+      await supabase.auth.verifyOtp({
+        email: cleanEmail,
+        token: cleanOtp,
+        type: "email"
+      });
 
     setLoading(false);
 
@@ -2491,16 +2559,38 @@ function CustomerLogin({ onClose, onSuccess }) {
     }
 
     if (!data.session) {
-      alert("Login was not completed. Please try again.");
+      alert(
+        "Login was not completed. Please try again."
+      );
       return;
     }
 
     onSuccess(data.session.user);
   }
 
+  function handleLoginValueChange(event) {
+    const value = event.target.value;
+
+    // If user starts with a number,
+    // switch to WhatsApp mode.
+    if (/^\s*[0-9]/.test(value)) {
+      setLoginValue(
+        value
+          .replace(/\D/g, "")
+          .slice(0, 10)
+      );
+
+      return;
+    }
+
+    // Otherwise use Email mode.
+    setLoginValue(value);
+  }
+
   return (
     <div className="login-overlay">
       <div className="login-popup">
+
         <button
           className="login-close"
           onClick={onClose}
@@ -2514,38 +2604,72 @@ function CustomerLogin({ onClose, onSuccess }) {
         </div>
 
         <h2>
-          {otpSent ? "Enter OTP" : "Login to continue"}
+          {otpSent
+            ? "Enter OTP"
+            : "Login to continue"}
         </h2>
 
         <p className="login-subtitle">
           {otpSent
-            ? `We sent a verification code to ${email}`
-            : "Login with your email to continue your order."}
+            ? isPhone
+              ? `We sent a verification code to +91 ${cleanPhone}`
+              : `We sent a verification code to ${cleanEmail}`
+            : "Login with your email / WhatsApp number to continue your order."}
         </p>
 
         {!otpSent ? (
           <>
             <label className="login-label">
-              Email address
+              {isPhone
+                ? "WhatsApp number"
+                : "Email address / WhatsApp number"}
             </label>
 
-            <input
-              className="login-input"
-              type="email"
-              value={email}
-              onChange={(event) =>
-                setEmail(event.target.value)
-              }
-              placeholder="Enter your email"
-              autoComplete="email"
-            />
+            <div className="login-input-wrapper">
+
+              {isPhone && (
+                <span className="phone-prefix">
+                  +91
+                </span>
+              )}
+
+              <input
+                className={
+                  isPhone
+                    ? "login-input phone-input"
+                    : "login-input"
+                }
+                type="text"
+                value={loginValue}
+                onChange={handleLoginValueChange}
+                placeholder={
+                  isPhone
+                    ? "Enter 10-digit WhatsApp number"
+                    : "Enter email or WhatsApp number"
+                }
+                inputMode={
+                  isPhone
+                    ? "numeric"
+                    : "email"
+                }
+                autoComplete={
+                  isPhone
+                    ? "tel"
+                    : "email"
+                }
+              />
+            </div>
 
             <button
               className="gold-button full"
               onClick={sendOtp}
               disabled={loading}
             >
-              {loading ? "Sending OTP..." : "Send OTP"}
+              {loading
+                ? "Sending OTP..."
+                : isPhone
+                  ? "Send OTP to WhatsApp"
+                  : "Send OTP to Email"}
             </button>
           </>
         ) : (
@@ -2562,7 +2686,10 @@ function CustomerLogin({ onClose, onSuccess }) {
               value={otp}
               onChange={(event) =>
                 setOtp(
-                  event.target.value.replace(/\D/g, "")
+                  event.target.value.replace(
+                    /\D/g,
+                    ""
+                  )
                 )
               }
               placeholder="Enter 6-digit OTP"
@@ -2574,7 +2701,9 @@ function CustomerLogin({ onClose, onSuccess }) {
               onClick={verifyOtp}
               disabled={loading}
             >
-              {loading ? "Verifying..." : "Verify & Continue"}
+              {loading
+                ? "Verifying..."
+                : "Verify & Continue"}
             </button>
 
             <button
@@ -2585,7 +2714,7 @@ function CustomerLogin({ onClose, onSuccess }) {
               }}
               disabled={loading}
             >
-              Change email
+              Change email / WhatsApp number
             </button>
           </>
         )}
