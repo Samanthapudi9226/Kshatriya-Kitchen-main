@@ -624,6 +624,79 @@ function sendWhatsApp(order) {
 
   window.open(url, "_blank");
 }
+function sendCustomerStatusWhatsApp(order, newStatus) {
+  const customerPhone = String(
+    order?.customer?.phone || ""
+  ).replace(/\D/g, "");
+
+  if (!customerPhone) {
+    alert("Customer WhatsApp number is not available.");
+    return;
+  }
+
+  let statusMessage = "";
+
+  switch (newStatus) {
+    case "Received":
+      statusMessage =
+        `Hello ${order.customer.name},\n\n` +
+        `Your Kshatriya Kitchen order *${order.id}* has been received successfully. ✅\n\n` +
+        `Total: *${money(order.total)}*\n\n` +
+        `We will start preparing your order shortly.\n\n` +
+        `Thank you for ordering from Kshatriya Kitchen!`;
+      break;
+
+    case "Order is being prepared":
+      statusMessage =
+        `Hello ${order.customer.name},\n\n` +
+        `Your Kshatriya Kitchen order *${order.id}* is now being prepared. 👨‍🍳\n\n` +
+        `Total: *${money(order.total)}*\n\n` +
+        `We will update you once your order is ready.`;
+      break;
+
+    case "Order is packing":
+      statusMessage =
+        `Hello ${order.customer.name},\n\n` +
+        `Your Kshatriya Kitchen order *${order.id}* is now being packed. 📦\n\n` +
+        `Your order will be dispatched shortly.`;
+      break;
+
+    case "Order is in transit":
+      statusMessage =
+        `Hello ${order.customer.name},\n\n` +
+        `Your Kshatriya Kitchen order *${order.id}* is now in transit. 🛵\n\n` +
+        `Your order is on the way to you.\n\n` +
+        `Please keep your phone available for delivery.`;
+      break;
+
+    case "Delivered":
+      statusMessage =
+        `Hello ${order.customer.name},\n\n` +
+        `Your Kshatriya Kitchen order *${order.id}* has been delivered successfully. ❤️\n\n` +
+        `Thank you for ordering with Kshatriya Kitchen!\n\n` +
+        `We hope you enjoyed your meal.`;
+      break;
+
+    case "Cancelled":
+      statusMessage =
+        `Hello ${order.customer.name},\n\n` +
+        `Your Kshatriya Kitchen order *${order.id}* has been cancelled.\n\n` +
+        `If you have any questions, please contact us.`;
+      break;
+
+    default:
+      statusMessage =
+        `Hello ${order.customer.name},\n\n` +
+        `Your Kshatriya Kitchen order *${order.id}* status has been updated to:\n\n` +
+        `*${newStatus}*`;
+  }
+
+  const url =
+    `https://wa.me/${customerPhone}?text=` +
+    encodeURIComponent(statusMessage);
+
+  window.open(url, "_blank");
+}
 
   if (admin) {
     return (
@@ -1822,6 +1895,148 @@ function Admin({
   setOrders,
   exit
 }) {
+  const [lastKnownOrderCount, setLastKnownOrderCount] =
+  useState(orders.length);
+
+const [soundEnabled, setSoundEnabled] =
+  useState(false);
+
+function playNewOrderSound() {
+  try {
+    const AudioContext =
+      window.AudioContext ||
+      window.webkitAudioContext;
+
+    if (!AudioContext) {
+      return;
+    }
+
+    const audioContext =
+      new AudioContext();
+
+    const oscillator =
+      audioContext.createOscillator();
+
+    const gain =
+      audioContext.createGain();
+
+    oscillator.type = "sine";
+    oscillator.frequency.setValueAtTime(
+      880,
+      audioContext.currentTime
+    );
+
+    oscillator.frequency.setValueAtTime(
+      1174,
+      audioContext.currentTime + 0.12
+    );
+
+    oscillator.frequency.setValueAtTime(
+      880,
+      audioContext.currentTime + 0.24
+    );
+
+    gain.gain.setValueAtTime(
+      0.0001,
+      audioContext.currentTime
+    );
+
+    gain.gain.exponentialRampToValueAtTime(
+      0.25,
+      audioContext.currentTime + 0.02
+    );
+
+    gain.gain.exponentialRampToValueAtTime(
+      0.0001,
+      audioContext.currentTime + 0.45
+    );
+
+    oscillator.connect(gain);
+    gain.connect(audioContext.destination);
+
+    oscillator.start();
+    oscillator.stop(
+      audioContext.currentTime + 0.5
+    );
+  } catch (error) {
+    console.error(
+      "Could not play notification sound:",
+      error
+    );
+  }
+}
+
+useEffect(() => {
+  if (!supabase) {
+    return;
+  }
+
+  let cancelled = false;
+
+  async function checkNewOrders() {
+    const { data, error } = await supabase
+      .from("orders")
+      .select(
+        "id, order_data, created_at, updated_at"
+      )
+      .order("created_at", {
+        ascending: false
+      });
+
+    if (error) {
+      console.error(
+        "Could not check new orders:",
+        error
+      );
+      return;
+    }
+
+    if (cancelled) {
+      return;
+    }
+
+    const latestOrders = (data || []).map(
+      (row) => ({
+        ...(row.order_data || {}),
+        id: row.id,
+        createdAt:
+          row.order_data?.createdAt ||
+          row.created_at
+      })
+    );
+
+    if (
+      latestOrders.length >
+      lastKnownOrderCount
+    ) {
+      setOrders(latestOrders);
+
+      if (soundEnabled) {
+        playNewOrderSound();
+      }
+    }
+
+    setLastKnownOrderCount(
+      latestOrders.length
+    );
+  }
+
+  checkNewOrders();
+
+  const interval = setInterval(
+    checkNewOrders,
+    5000
+  );
+
+  return () => {
+    cancelled = true;
+    clearInterval(interval);
+  };
+}, [
+  soundEnabled,
+  lastKnownOrderCount,
+  setOrders
+]);
   const [loggedIn, setLoggedIn] =
     useState(false);
 
@@ -2479,76 +2694,102 @@ function Admin({
                     </div>
 
                     <select
-                      value={
-                        order.status
-                      }
-                      onChange={(event) =>
-                        setOrders(
-                          orders.map(
-                            (entry) =>
-                              entry.id ===
-                              order.id
-                                ? {
-                                    ...entry,
-                                    status:
-                                      event
-                                        .target
-                                        .value
-                                  }
-                                : entry
-                          )
-                        )
-                      }
-                    >
-                      <option>
-                        Received
-                      </option>
+  value={order.status || "Received"}
+  onChange={async (event) => {
+    const newStatus = event.target.value;
 
-                      <option>
-                        Preparing
-                      </option>
+    const updatedOrder = {
+      ...order,
+      status: newStatus,
+      updatedAt: new Date().toISOString()
+    };
 
-                      <option>
-                        Out for delivery
-                      </option>
+    // Update admin UI immediately
+    setOrders((current) =>
+      current.map((entry) =>
+        entry.id === order.id
+          ? updatedOrder
+          : entry
+      )
+    );
 
-                      <option>
-                        Completed
-                      </option>
+    // Save status to Supabase
+    if (supabase) {
+      const { error } = await supabase
+        .from("orders")
+        .update({
+          order_data: updatedOrder,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", order.id);
 
-                      <option>
-                        Cancelled
-                      </option>
-                    </select>
+      if (error) {
+        console.error(
+          "Could not update order status:",
+          error
+        );
+
+        alert(
+          "Status changed locally, but could not save to Supabase."
+        );
+
+        return;
+      }
+    }
+
+    // Open customer WhatsApp with prefilled status message
+    sendCustomerStatusWhatsApp(
+      updatedOrder,
+      newStatus
+    );
+  }}
+>
+  <option value="Received">
+    Received
+  </option>
+
+  <option value="Order is being prepared">
+    Order is being prepared
+  </option>
+
+  <option value="Order is packing">
+    Order is packing
+  </option>
+
+  <option value="Order is in transit">
+    Order is in transit
+  </option>
+
+  <option value="Delivered">
+    Delivered
+  </option>
+
+  <option value="Cancelled">
+    Cancelled
+  </option>
+</select>
 
                     <strong>
                       {money(order.total)}
                     </strong>
 
                     {order.payment && (
-                      <div>
-                        <strong>
-                          UPI
-                        </strong>
+  <div>
+    <strong>
+      {order.payment.method || "Payment"}
+    </strong>
 
-                        <p>
-                          Txn:{" "}
-                          {
-                            order
-                              .payment
-                              .transactionId
-                          }
-                        </p>
+    {order.payment.transactionId && (
+      <p>
+        Txn: {order.payment.transactionId}
+      </p>
+    )}
 
-                        <p>
-                          {
-                            order
-                              .payment
-                              .status
-                          }
-                        </p>
-                      </div>
-                    )}
+    <p>
+      {order.payment.status || "-"}
+    </p>
+  </div>
+)}
                   </div>
                 ))
               )}
@@ -2567,16 +2808,28 @@ function AdminDashboard({
   return (
     <section>
       <div className="admin-heading">
-        <div>
-          <p className="eyebrow">
-            OVERVIEW
-          </p>
+  <div>
+    <p className="eyebrow">
+      OVERVIEW
+    </p>
 
-          <h1>
-            Dashboard
-          </h1>
-        </div>
-      </div>
+    <h1>
+      Dashboard
+    </h1>
+  </div>
+
+  <button
+    className="gold-button"
+    onClick={() => {
+      setSoundEnabled(true);
+      playNewOrderSound();
+    }}
+  >
+    {soundEnabled
+      ? "🔔 New Order Sound ON"
+      : "🔔 Enable Order Sound"}
+  </button>
+</div>
 
       <div className="stats-grid">
         <div>
