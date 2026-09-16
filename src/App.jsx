@@ -2268,9 +2268,13 @@ useEffect(() => {
       <main className="admin-main">
         {tab === "dashboard" && (
           <AdminDashboard
-            menu={menu}
-            orders={orders}
-          />
+          menu={menu}
+          orders={orders}
+          soundEnabled={soundEnabled}
+          setSoundEnabled={setSoundEnabled}
+          playNewOrderSound={playNewOrderSound}
+
+        />
         )}
 
         {tab === "menu" && (
@@ -2803,7 +2807,10 @@ useEffect(() => {
 
 function AdminDashboard({
   menu,
-  orders
+  orders,
+  soundEnabled,
+  setSoundEnabled,
+  playNewOrderSound
 }) {
   return (
     <section>
