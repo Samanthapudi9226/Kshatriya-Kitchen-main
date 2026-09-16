@@ -1584,6 +1584,7 @@ textarea { min-height: 90px; resize: vertical; }
   .hero-slide-image {
     position: absolute;
     inset: 50px;
+  
     width: calc(100% - 100px);
     height: calc(100% - 100px);
   
@@ -1631,31 +1632,32 @@ textarea { min-height: 90px; resize: vertical; }
      MOBILE HERO
      ========================================= */
   
-  @media (max-width: 759px) {
-    .hero {
-      min-height: auto;
-      padding: 45px 20px 50px;
-      flex-direction: column;
-      align-items: stretch;
+     @media (max-width: 759px) {
+      .hero {
+        min-height: auto;
+        padding: 45px 20px 50px;
+        flex-direction: column;
+        align-items: stretch;
+      }
+    
+      .hero-copy {
+        width: 100%;
+        max-width: 100%;
+      }
+    
+      .hero-art {
+        display: block;
+        width: min(320px, 82vw);
+        height: min(320px, 82vw);
+        margin: 45px auto 0;
+        flex-shrink: 0;
+      }
+    
+      .hero-slide-image {
+        inset: 30px;
+        width: calc(100% - 60px);
+        height: calc(100% - 60px);
+        border-width: 6px;
+        border-radius: 50%;
+      }
     }
-  
-    .hero-copy {
-      width: 100%;
-      max-width: 100%;
-    }
-  
-    .hero-art {
-      display: block;
-      width: min(320px, 82vw);
-      height: min(320px, 82vw);
-      margin: 45px auto 0;
-      flex-shrink: 0;
-    }
-  
-    .hero-slide-image {
-      inset: 30px;
-      width: calc(100% - 60px);
-      height: calc(100% - 60px);
-      border-width: 6px;
-    }
-  }
