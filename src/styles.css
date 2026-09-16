@@ -1779,3 +1779,33 @@ textarea { min-height: 90px; resize: vertical; }
     text-align: center;
     color: rgba(255, 255, 255, 0.65);
   }
+  .food-card.unavailable {
+    opacity: 0.58;
+  }
+  
+  .food-card.unavailable img {
+    filter: grayscale(100%);
+  }
+  
+  .unavailable-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.35);
+    color: #fff;
+    font-weight: 700;
+    font-size: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .image-button {
+    position: relative;
+  }
+  
+  .add-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
