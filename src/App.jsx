@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { restaurantDefaults, supabase } from "./config";
 import {
   ArrowLeft,
@@ -715,16 +715,17 @@ function sendCustomerStatusWhatsApp(order, newStatus) {
   if (isAdminPath) {
     return (
       <Admin
-        menu={menu}
-        setMenu={setMenu}
-        settings={settings}
-        setSettings={setSettings}
-        orders={orders}
-        setOrders={setOrders}
-        exit={() => {
-          window.location.href = "/";
-        }}
-      />
+      menu={menu}
+      setMenu={setMenu}
+      settings={settings}
+      setSettings={setSettings}
+      orders={orders}
+      setOrders={setOrders}
+      sendCustomerStatusWhatsApp={sendCustomerStatusWhatsApp}
+      exit={() => {
+        window.location.href = "/";
+      }}
+    />
     );
   }
   if (showProfileSetup) {
@@ -1893,13 +1894,17 @@ function Admin({
   setSettings,
   orders,
   setOrders,
-  exit
+  exit,
+  sendCustomerStatusWhatsApp
 }) {
-  const [lastKnownOrderCount, setLastKnownOrderCount] =
-  useState(orders.length);
-
-const [soundEnabled, setSoundEnabled] =
+  const [soundEnabled, setSoundEnabled] =
   useState(false);
+
+const knownOrderIdsRef = useRef(
+  new Set()
+);
+
+const soundEnabledRef = useRef(false);
 
 function playNewOrderSound() {
   try {
@@ -1921,6 +1926,7 @@ function playNewOrderSound() {
       audioContext.createGain();
 
     oscillator.type = "sine";
+
     oscillator.frequency.setValueAtTime(
       880,
       audioContext.currentTime
@@ -1955,6 +1961,7 @@ function playNewOrderSound() {
     gain.connect(audioContext.destination);
 
     oscillator.start();
+
     oscillator.stop(
       audioContext.currentTime + 0.5
     );
@@ -1967,25 +1974,32 @@ function playNewOrderSound() {
 }
 
 useEffect(() => {
-  if (!supabase) {
+  soundEnabledRef.current =
+    soundEnabled;
+}, [soundEnabled]);
+
+useEffect(() => {
+  if (!supabase || !loggedIn) {
     return;
   }
 
   let cancelled = false;
+  let firstLoad = true;
 
-  async function checkNewOrders() {
-    const { data, error } = await supabase
-      .from("orders")
-      .select(
-        "id, order_data, created_at, updated_at"
-      )
-      .order("created_at", {
-        ascending: false
-      });
+  async function loadAdminOrders() {
+    const { data, error } =
+      await supabase
+        .from("orders")
+        .select(
+          "id, order_data, created_at, updated_at"
+        )
+        .order("created_at", {
+          ascending: false
+        });
 
     if (error) {
       console.error(
-        "Could not check new orders:",
+        "Could not load admin orders:",
         error
       );
       return;
@@ -1995,36 +2009,60 @@ useEffect(() => {
       return;
     }
 
-    const latestOrders = (data || []).map(
-      (row) => ({
+    const latestOrders =
+      (data || []).map((row) => ({
         ...(row.order_data || {}),
         id: row.id,
         createdAt:
           row.order_data?.createdAt ||
           row.created_at
-      })
+      }));
+
+    const latestIds = new Set(
+      latestOrders.map(
+        (order) => order.id
+      )
     );
 
-    if (
-      latestOrders.length >
-      lastKnownOrderCount
-    ) {
+    // First successful load:
+    // show all existing orders without
+    // playing the new-order sound.
+    if (firstLoad) {
+      knownOrderIdsRef.current =
+        latestIds;
+
       setOrders(latestOrders);
 
-      if (soundEnabled) {
-        playNewOrderSound();
-      }
+      firstLoad = false;
+
+      return;
     }
 
-    setLastKnownOrderCount(
-      latestOrders.length
-    );
+    const newOrders =
+      latestOrders.filter(
+        (order) =>
+          !knownOrderIdsRef.current.has(
+            order.id
+          )
+      );
+
+    setOrders(latestOrders);
+
+    if (
+      newOrders.length > 0 &&
+      soundEnabledRef.current
+    ) {
+      playNewOrderSound();
+    }
+
+    knownOrderIdsRef.current =
+      latestIds;
   }
 
-  checkNewOrders();
+  loadAdminOrders();
 
   const interval = setInterval(
-    checkNewOrders,
+    loadAdminOrders,
     5000
   );
 
@@ -2032,11 +2070,7 @@ useEffect(() => {
     cancelled = true;
     clearInterval(interval);
   };
-}, [
-  soundEnabled,
-  lastKnownOrderCount,
-  setOrders
-]);
+}, [loggedIn, setOrders]);
   const [loggedIn, setLoggedIn] =
     useState(false);
 
@@ -2828,6 +2862,7 @@ function AdminDashboard({
   <button
     className="gold-button"
     onClick={() => {
+      soundEnabledRef.current = true;
       setSoundEnabled(true);
       playNewOrderSound();
     }}
