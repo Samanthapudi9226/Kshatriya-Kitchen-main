@@ -1926,60 +1926,73 @@ function Admin({
       const AudioContext =
         window.AudioContext ||
         window.webkitAudioContext;
-
+  
       if (!AudioContext) {
         return;
       }
-
+  
       const audioContext =
         new AudioContext();
-
-      const oscillator =
-        audioContext.createOscillator();
-
-      const gain =
-        audioContext.createGain();
-
-      oscillator.type = "sine";
-
-      oscillator.frequency.setValueAtTime(
-        880,
-        audioContext.currentTime
-      );
-
-      oscillator.frequency.setValueAtTime(
-        1174,
-        audioContext.currentTime + 0.12
-      );
-
-      oscillator.frequency.setValueAtTime(
-        880,
-        audioContext.currentTime + 0.24
-      );
-
-      gain.gain.setValueAtTime(
-        0.0001,
-        audioContext.currentTime
-      );
-
-      gain.gain.exponentialRampToValueAtTime(
-        0.25,
-        audioContext.currentTime + 0.02
-      );
-
-      gain.gain.exponentialRampToValueAtTime(
-        0.0001,
-        audioContext.currentTime + 0.45
-      );
-
-      oscillator.connect(gain);
-      gain.connect(audioContext.destination);
-
-      oscillator.start();
-
-      oscillator.stop(
-        audioContext.currentTime + 0.5
-      );
+  
+      const now =
+        audioContext.currentTime;
+  
+      function beep(
+        frequency,
+        startTime,
+        duration
+      ) {
+        const oscillator =
+          audioContext.createOscillator();
+  
+        const gain =
+          audioContext.createGain();
+  
+        oscillator.type = "sine";
+  
+        oscillator.frequency.setValueAtTime(
+          frequency,
+          startTime
+        );
+  
+        gain.gain.setValueAtTime(
+          0.0001,
+          startTime
+        );
+  
+        gain.gain.exponentialRampToValueAtTime(
+          0.8,
+          startTime + 0.02
+        );
+  
+        gain.gain.exponentialRampToValueAtTime(
+          0.0001,
+          startTime + duration
+        );
+  
+        oscillator.connect(gain);
+        gain.connect(
+          audioContext.destination
+        );
+  
+        oscillator.start(startTime);
+  
+        oscillator.stop(
+          startTime + duration
+        );
+      }
+  
+      // 🔔 LOUD NEW ORDER ALERT
+      beep(880, now, 0.45);
+      beep(1174, now + 0.18, 0.45);
+      beep(880, now + 0.36, 0.55);
+  
+      // Extra final high-pitched alert
+      beep(1320, now + 0.62, 0.5);
+  
+      setTimeout(() => {
+        audioContext.close();
+      }, 1500);
     } catch (error) {
       console.error(
         "Could not play notification sound:",
