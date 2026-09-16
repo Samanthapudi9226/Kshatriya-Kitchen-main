@@ -1661,3 +1661,87 @@ textarea { min-height: 90px; resize: vertical; }
         border-radius: 50%;
       }
     }
+/* =========================================
+   FINAL HERO CIRCLE FIX
+   ========================================= */
+
+.hero-art {
+  position: relative;
+  width: 390px;
+  height: 390px;
+  margin-left: auto;
+  overflow: visible;
+}
+
+.hero-art .hero-image-slider {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 50%;
+}
+
+.hero-art .hero-slide-image {
+  position: absolute !important;
+  top: 50px !important;
+  left: 50px !important;
+  right: auto !important;
+  bottom: auto !important;
+
+  width: 290px !important;
+  height: 290px !important;
+
+  max-width: none !important;
+  max-height: none !important;
+
+  object-fit: cover !important;
+  border-radius: 50% !important;
+  border: 8px solid var(--gold) !important;
+
+  opacity: 0;
+  transform: scale(1.04);
+
+  animation-name: heroFoodImage;
+  animation-duration: var(--hero-animation-duration, 40s);
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+/* =========================================
+   MOBILE HERO CIRCLE
+   ========================================= */
+
+@media (max-width: 759px) {
+  .hero-art {
+    display: block;
+    position: relative;
+    width: min(320px, 82vw);
+    height: min(320px, 82vw);
+    margin: 45px auto 0;
+    overflow: visible;
+  }
+
+  .hero-art .hero-image-slider {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    overflow: hidden;
+  }
+
+  .hero-art .hero-slide-image {
+    top: 30px !important;
+    left: 30px !important;
+
+    width: calc(100% - 60px) !important;
+    height: calc(100% - 60px) !important;
+
+    max-width: none !important;
+    max-height: none !important;
+
+    border-radius: 50% !important;
+    border-width: 6px !important;
+  }
+}
