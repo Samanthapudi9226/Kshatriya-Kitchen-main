@@ -282,6 +282,7 @@ function App() {
   const [customerUser, setCustomerUser] = useState(null);
 const [customerProfile, setCustomerProfile] = useState(null);
 const [showLoginPopup, setShowLoginPopup] = useState(false);
+const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 const [customerOrders, setCustomerOrders] = useState([]);
 const [showProfileSetup, setShowProfileSetup] = useState(false);
   useEffect(() => {
@@ -672,50 +673,60 @@ async function placeOrder(
     />
   ) : null}
 
-    <header className="topbar">
+<header className="topbar">
   <button
     className="brand"
-    onClick={() => setPage("home")}
+    onClick={() => {
+      setPage("home");
+      setMobileMenuOpen(false);
+    }}
   >
     <span className="brand-mark">KK</span>
-
     <span>
       <strong>{settings.name}</strong>
       <small>{settings.tagline}</small>
     </span>
   </button>
 
-  <nav>
-  <button onClick={() => (window.location.href = "/")}>
-    Home
-  </button>
+  {/* Desktop Navigation */}
+  <nav className="desktop-nav">
+    <button onClick={() => (window.location.href = "/")}>
+      Home
+    </button>
+    <button onClick={() => (window.location.href = "/menu")}>
+      Menu
+    </button>
+    <button onClick={() => (window.location.href = "/admin")}>
+      Admin
+    </button>
+  </nav>
 
-  <button onClick={() => (window.location.href = "/menu")}>
-    Menu
+  {/* Mobile Menu Button */}
+  <button
+    className="mobile-menu-button"
+    onClick={() => setMobileMenuOpen((prev) => !prev)}
+    aria-label="Open menu"
+  >
+    ☰
   </button>
-
-  <button onClick={() => (window.location.href = "/admin")}>
-    Admin
-  </button>
-</nav>
 
   <div className="topbar-actions">
-  {customerUser ? (
-  <button
-    className="account-button"
-    onClick={() => (window.location.href = "/account")}
-  >
-    <span className="account-icon">👤</span>
-    <span>Account</span>
-  </button>
-) : (
-  <button
-    className="login-button"
-    onClick={() => setShowLoginPopup(true)}
-  >
-    <span>Login / Register</span>
-  </button>
-)}
+    {customerUser ? (
+      <button
+        className="account-button"
+        onClick={() => (window.location.href = "/account")}
+      >
+        <span className="account-icon">👤</span>
+        <span>Account</span>
+      </button>
+    ) : (
+      <button
+        className="login-button"
+        onClick={() => setShowLoginPopup(true)}
+      >
+        <span>Login / Register</span>
+      </button>
+    )}
 
     <button
       className="cart-button"
@@ -725,6 +736,58 @@ async function placeOrder(
       <span>{cartCount}</span>
     </button>
   </div>
+
+  {/* Mobile Navigation */}
+  {mobileMenuOpen && (
+    <div className="mobile-nav">
+      <button
+        onClick={() => {
+          setMobileMenuOpen(false);
+          window.location.href = "/";
+        }}
+      >
+        Home
+      </button>
+
+      <button
+        onClick={() => {
+          setMobileMenuOpen(false);
+          window.location.href = "/menu";
+        }}
+      >
+        Menu
+      </button>
+
+      <button
+        onClick={() => {
+          setMobileMenuOpen(false);
+          window.location.href = "/admin";
+        }}
+      >
+        Admin
+      </button>
+
+      {customerUser ? (
+        <button
+          onClick={() => {
+            setMobileMenuOpen(false);
+            window.location.href = "/account";
+          }}
+        >
+          👤 Account
+        </button>
+      ) : (
+        <button
+          onClick={() => {
+            setMobileMenuOpen(false);
+            setShowLoginPopup(true);
+          }}
+        >
+          Login / Register
+        </button>
+      )}
+    </div>
+  )}
 </header>
 
       <main>
