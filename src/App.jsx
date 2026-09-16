@@ -26,6 +26,11 @@ import {
 
 const money = (value) =>
   `₹${Number(value || 0).toFixed(0)}`;
+  const KITCHEN_LOCATION = {
+    latitude: 14.923638,
+    longitude: 79.988963
+  };
+  
   function calculateDeliveryCharge(distanceKm) {
     const distance = Number(distanceKm || 0);
   
@@ -33,9 +38,9 @@ const money = (value) =>
       return 0;
     }
   
-    const extraKm = Math.ceil(distance - 3);
+    const additionalKm = Math.ceil(distance - 3);
   
-    return 40 + (extraKm - 1) * 10;
+    return 30 + Math.max(0, additionalKm - 1) * 10;
   }
 
 function useStoredState(key, initialValue) {
@@ -279,6 +284,8 @@ function App() {
   const [admin, setAdmin] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [deliveryDistance, setDeliveryDistance] = useState(0);
+  const [deliveryDistanceLoading, setDeliveryDistanceLoading] =
+  useState(false);
   const [customerUser, setCustomerUser] = useState(null);
 const [customerProfile, setCustomerProfile] = useState(null);
 const [showLoginPopup, setShowLoginPopup] = useState(false);
@@ -430,8 +437,79 @@ const [showProfileSetup, setShowProfileSetup] = useState(false);
     subtotal * (Number(settings.tax || 0) / 100);
 
   const total = subtotal + delivery + service + tax;
-
+  useEffect(() => {
+    let cancelled = false;
+  
+    async function calculateRoadDistance() {
+      const latitude = Number(customerProfile?.latitude);
+      const longitude = Number(customerProfile?.longitude);
+  
+      if (
+        !Number.isFinite(latitude) ||
+        !Number.isFinite(longitude)
+      ) {
+        setDeliveryDistance(0);
+        return;
+      }
+  
+      setDeliveryDistanceLoading(true);
+  
+      try {
+        const url =
+          `https://router.project-osrm.org/route/v1/driving/` +
+          `${KITCHEN_LOCATION.longitude},${KITCHEN_LOCATION.latitude};` +
+          `${longitude},${latitude}` +
+          `?overview=false`;
+  
+        const response = await fetch(url);
+  
+        if (!response.ok) {
+          throw new Error("Could not calculate delivery distance.");
+        }
+  
+        const data = await response.json();
+  
+        const meters = data?.routes?.[0]?.distance;
+  
+        if (!Number.isFinite(meters)) {
+          throw new Error("Delivery route was not found.");
+        }
+  
+        const distanceKm = meters / 1000;
+  
+        if (!cancelled) {
+          setDeliveryDistance(
+            Number(distanceKm.toFixed(2))
+          );
+        }
+      } catch (error) {
+        console.error(
+          "Could not calculate delivery distance:",
+          error
+        );
+  
+        if (!cancelled) {
+          setDeliveryDistance(0);
+        }
+      } finally {
+        if (!cancelled) {
+          setDeliveryDistanceLoading(false);
+        }
+      }
+    }
+  
+    calculateRoadDistance();
+  
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    customerProfile?.latitude,
+    customerProfile?.longitude
+  ]);
+  
   function addToCart(item) {
+    
     setCart((current) => {
       const found = current.find(
         (cartItem) => cartItem.id === item.id
@@ -475,20 +553,36 @@ const [showProfileSetup, setShowProfileSetup] = useState(false);
     );
   }
 
- function startCheckout() {
-  if (!cart.length) {
-    alert("Your cart is empty.");
-    return;
+  function startCheckout() {
+    if (!cart.length) {
+      alert("Your cart is empty.");
+      return;
+    }
+  
+    if (!customerUser) {
+      setShowLoginPopup(true);
+      return;
+    }
+  
+    if (
+      !customerProfile ||
+      !customerProfile.name ||
+      !customerProfile.phone ||
+      !customerProfile.address ||
+      !Number.isFinite(
+        Number(customerProfile.latitude)
+      ) ||
+      !Number.isFinite(
+        Number(customerProfile.longitude)
+      )
+    ) {
+      setShowProfileSetup(true);
+      return;
+    }
+  
+    setPage("checkout");
+    setCartOpen(false);
   }
-
-  if (!customerUser) {
-    setShowLoginPopup(true);
-    return;
-  }
-
-  setPage("checkout");
-  setCartOpen(false);
-}
 
 async function placeOrder(
   customer,
@@ -499,6 +593,11 @@ async function placeOrder(
     user_id: customerUser?.id || null,
     customer,
     items: cart,
+    subtotal,
+    deliveryDistance,
+    deliveryCharge: delivery,
+    serviceCharge: service,
+    tax,
     total,
     payment,
     status: "Received",
@@ -554,8 +653,21 @@ function sendWhatsApp(order) {
   });
 
   lines.push("");
-  lines.push(`*Total: ${money(order.total)}*`);
-  lines.push("");
+lines.push(
+  `Subtotal: ${money(order.subtotal)}`
+);
+lines.push(
+  `Delivery Distance: ${
+    Number(order.deliveryDistance || 0).toFixed(1)
+  } km`
+);
+lines.push(
+  `Delivery Charge: ${money(order.deliveryCharge)}`
+);
+lines.push(
+  `*Total: ${money(order.total)}*`
+);
+lines.push("");
 
   if (order.payment?.method === "UPI") {
     lines.push("*Payment Details*");
@@ -765,7 +877,9 @@ if (admin) {
           !profile ||
           !profile.name ||
           !profile.phone ||
-          !profile.address
+          !profile.address ||
+          !Number.isFinite(Number(profile.latitude)) ||
+          !Number.isFinite(Number(profile.longitude))
         ) {
           setShowProfileSetup(true);
         } else {
@@ -1024,19 +1138,19 @@ if (admin) {
 
         {page === "checkout" && (
           <Checkout
-            cart={cart}
-            total={total}
-            subtotal={subtotal}
-            delivery={delivery}
-            service={service}
-            tax={tax}
-            settings={settings}
-            customer={customerProfile}
-            deliveryDistance={deliveryDistance}
-            setDeliveryDistance={setDeliveryDistance}
-            placeOrder={placeOrder}
-            back={() => setPage("menu")}
-          />
+          cart={cart}
+          total={total}
+          subtotal={subtotal}
+          delivery={delivery}
+          service={service}
+          tax={tax}
+          settings={settings}
+          customer={customerProfile}
+          deliveryDistance={deliveryDistance}
+          deliveryDistanceLoading={deliveryDistanceLoading}
+          placeOrder={placeOrder}
+          back={() => setPage("menu")}
+        />
         )}
         {page === "account" && (
   <CustomerAccount
@@ -1390,7 +1504,7 @@ function Checkout({
   settings,
   customer,
   deliveryDistance,
-  setDeliveryDistance,
+  deliveryDistanceLoading,
   placeOrder,
   back
 }) {
@@ -1419,8 +1533,23 @@ function Checkout({
     if (
       !customer?.name ||
       !customer?.phone ||
-      !customer?.address
+      !customer?.address ||
+      !Number.isFinite(Number(customer?.latitude)) ||
+      !Number.isFinite(Number(customer?.longitude))
     ) {
+      if (deliveryDistanceLoading) {
+        alert(
+          "Please wait while your delivery distance is being calculated."
+        );
+        return;
+      }
+      
+      if (!deliveryDistance || deliveryDistance <= 0) {
+        alert(
+          "Your delivery distance could not be calculated. Please check your saved location and try again."
+        );
+        return;
+      }
       alert(
         "Please complete your customer profile before placing an order."
       );
@@ -1567,30 +1696,39 @@ function Checkout({
             </p>
           </div>
 
-          <label>
-            Delivery distance (km)
+          <div className="delivery-distance-box">
+  <div className="delivery-distance-row">
+    <span>
+      Delivery distance
+    </span>
 
-            <input
-              type="number"
-              min="0"
-              step="0.1"
-              value={deliveryDistance}
-              onChange={(event) =>
-                setDeliveryDistance(
-                  Number(
-                    event.target.value || 0
-                  )
-                )
-              }
-              placeholder="Example: 4.5"
-            />
+    <strong>
+      {deliveryDistanceLoading
+        ? "Calculating..."
+        : deliveryDistance > 0
+        ? `${deliveryDistance.toFixed(1)} km`
+        : "Location required"}
+    </strong>
+  </div>
 
-            <span className="optional">
-              Up to 3 km free. After 3 km, delivery
-              starts at ₹40 and increases by ₹10
-              per additional km.
-            </span>
-          </label>
+  <div className="delivery-distance-row">
+    <span>
+      Delivery charge
+    </span>
+
+    <strong>
+      {deliveryDistanceLoading
+        ? "Calculating..."
+        : money(delivery)}
+    </strong>
+  </div>
+
+  <p className="delivery-distance-note">
+    Up to 3 km — FREE
+    <br />
+    After 3 km — ₹30 + ₹10 per additional km
+  </p>
+</div>
 
           <label>
             Order notes{" "}
@@ -3325,7 +3463,17 @@ function CustomerProfileSetup({
       alert("Please enter your delivery address.");
       return;
     }
-
+    
+    if (
+      !Number.isFinite(Number(latitude)) ||
+      !Number.isFinite(Number(longitude))
+    ) {
+      alert(
+        "Please select your delivery location on the map before saving."
+      );
+      return;
+    }
+    
     if (!user?.id) {
       alert(
         "Your login session could not be found. Please login again."
