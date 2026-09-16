@@ -2731,29 +2731,39 @@ function Admin({
                     key={order.id}
                   >
                     <div>
-                      <strong>
-                        {order.id}
-                      </strong>
+  <strong>
+    {order.id}
+  </strong>
 
-                      <p>
-                        {
-                          order.customer
-                            .name
-                        }{" "}
-                        ·{" "}
-                        {
-                          order.customer
-                            .phone
-                        }
-                      </p>
+  <p>
+    {order.customer.name} ·{" "}
+    {order.customer.phone}
+  </p>
 
-                      <p>
-                        {
-                          order.customer
-                            .address
-                        }
-                      </p>
-                    </div>
+  <p>
+    {order.customer.address}
+  </p>
+
+  {order.customer.notes && (
+    <p>
+      <strong>Notes:</strong>{" "}
+      {order.customer.notes}
+    </p>
+  )}
+
+  {order.items && order.items.length > 0 && (
+    <div className="order-items">
+      <strong>Order Items</strong>
+
+      {order.items.map((item) => (
+        <p key={item.id}>
+          {item.name} × {item.quantity} —{" "}
+          {money(item.price * item.quantity)}
+        </p>
+      ))}
+    </div>
+  )}
+</div>
 
                     <select
   value={order.status || "Received"}
