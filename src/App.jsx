@@ -533,69 +533,97 @@ async function placeOrder(
   sendWhatsApp(order);
 }
 
-  function sendWhatsApp(order) {
-    const configured = String(
-      settings.whatsapp || ""
-    ).replace(/\D/g, "");
+function sendWhatsApp(order) {
+  const configured = String(
+    settings.whatsapp || ""
+  ).replace(/\D/g, "");
 
-    const phone = configured || "";
+  const phone = configured || "";
 
-    const paymentLines = order.payment
-      ? [
-          "",
-          "*Payment Details*",
-          `Payment Method: ${order.payment.method}`,
-          `UPI ID: ${order.payment.upiId}`,
-          `Transaction ID: ${order.payment.transactionId}`,
-          `Payment Status: ${order.payment.status}`
-        ]
-      : [
-          "",
-          "Payment Method: Pay on confirmation"
-        ];
+  const lines = [
+    `*${settings.name} Order*`,
+    `Order ID: ${order.id}`,
+    ""
+  ];
 
-    const lines = [
-      `*${settings.name} Order*`,
-      `Order ID: ${order.id}`,
-      ""
-    ];
+  order.items.forEach((item) => {
+    lines.push(
+      `${item.name} × ${item.quantity} - ${money(
+        item.price * item.quantity
+      )}`
+    );
+  });
 
-    order.items.forEach((item) => {
-      lines.push(
-        `${item.name} × ${item.quantity} - ${money(
-          item.price * item.quantity
-        )}`
-      );
-    });
+  lines.push("");
+  lines.push(`*Total: ${money(order.total)}*`);
+  lines.push("");
 
-    lines.push("");
-    lines.push(`Total: ${money(order.total)}`);
-
-    paymentLines.forEach((line) => {
-      lines.push(line);
-    });
-
-    lines.push(`Customer: ${order.customer.name}`);
-    lines.push(`Phone: ${order.customer.phone}`);
-    lines.push(`Address: ${order.customer.address}`);
-
-    if (order.customer.notes) {
-      lines.push(`Notes: ${order.customer.notes}`);
-    }
-
-    const message = lines.join("\n");
-
-    if (!phone) {
-      alert("WhatsApp number is not configured.");
-      return;
-    }
-
-    const url = `https://wa.me/${phone}?text=${encodeURIComponent(
-      message
-    )}`;
-
-    window.open(url, "_blank");
+  if (order.payment?.method === "UPI") {
+    lines.push("*Payment Details*");
+    lines.push(`Payment Method: UPI`);
+    lines.push(
+      `UPI ID: ${order.payment.upiId || "-"}`
+    );
+    lines.push(
+      `Transaction ID: ${
+        order.payment.transactionId || "-"
+      }`
+    );
+    lines.push(
+      `Payment Status: ${
+        order.payment.status || "Submitted"
+      }`
+    );
   }
+
+  if (
+    order.payment?.method ===
+    "Cash on Delivery"
+  ) {
+    lines.push("*Payment Details*");
+    lines.push(
+      "Payment Method: Cash on Delivery"
+    );
+    lines.push(
+      `Payment Status: ${
+        order.payment.status ||
+        "Pay on Delivery"
+      }`
+    );
+  }
+
+  lines.push("");
+  lines.push(
+    `Customer: ${order.customer.name}`
+  );
+  lines.push(
+    `Phone: ${order.customer.phone}`
+  );
+  lines.push(
+    `Address: ${order.customer.address}`
+  );
+
+  if (order.customer.notes) {
+    lines.push(
+      `Notes: ${order.customer.notes}`
+    );
+  }
+
+  const message = lines.join("\n");
+
+  if (!phone) {
+    alert(
+      "WhatsApp number is not configured."
+    );
+    return;
+  }
+
+  const url =
+    `https://wa.me/${phone}?text=` +
+    encodeURIComponent(message);
+
+  window.open(url, "_blank");
+}
 
   if (admin) {
     return (
@@ -1288,6 +1316,17 @@ function Checkout({
   const [paymentError, setPaymentError] =
     useState("");
 
+  const [paymentMethod, setPaymentMethod] =
+    useState(
+      settings.upiEnabled
+        ? "UPI"
+        : total <= 400
+          ? "COD"
+          : ""
+    );
+
+  const codAvailable = total <= 400;
+
   function submit(event) {
     event.preventDefault();
 
@@ -1302,9 +1341,53 @@ function Checkout({
       return;
     }
 
-    let payment = null;
+    if (!paymentMethod) {
+      alert(
+        "Please select a payment method."
+      );
+      return;
+    }
 
-    if (settings.upiEnabled) {
+    // ==============================
+    // CASH ON DELIVERY
+    // ==============================
+    if (paymentMethod === "COD") {
+      if (!codAvailable) {
+        alert(
+          "Cash on Delivery is available only for orders up to ₹400."
+        );
+        return;
+      }
+
+      const payment = {
+        method: "Cash on Delivery",
+        status: "Pay on Delivery",
+        upiId: "",
+        transactionId: ""
+      };
+
+      placeOrder(
+        {
+          ...customer,
+          notes
+        },
+        payment
+      );
+
+      return;
+    }
+
+    // ==============================
+    // UPI PAYMENT
+    // ==============================
+    if (paymentMethod === "UPI") {
+      if (!settings.upiEnabled) {
+        alert(
+          "UPI payment is currently unavailable."
+        );
+        return;
+      }
+
       if (!settings.upiQr) {
         alert(
           "UPI QR code has not been configured by the restaurant."
@@ -1321,24 +1404,29 @@ function Checkout({
         return;
       }
 
-      payment = createUpiPayment({
-        transactionId,
-        amount: total,
-        upiId: settings.upiId
-      });
-    }
+      const payment =
+        createUpiPayment({
+          transactionId,
+          amount: total,
+          upiId: settings.upiId
+        });
 
-    placeOrder(
-      {
-        ...customer,
-        notes
-      },
-      payment
-    );
+      placeOrder(
+        {
+          ...customer,
+          notes
+        },
+        {
+          ...payment,
+          method: "UPI"
+        }
+      );
+    }
   }
 
   return (
     <section className="checkout-page">
+
       <button
         className="back-link"
         onClick={back}
@@ -1358,10 +1446,12 @@ function Checkout({
       </div>
 
       <div className="checkout-layout">
+
         <form
           className="customer-form"
           onSubmit={submit}
         >
+
           <div className="saved-customer-box">
             <p className="eyebrow">
               DELIVERY DETAILS
@@ -1431,94 +1521,195 @@ function Checkout({
             />
           </label>
 
-          {settings.upiEnabled && (
-            <div className="upi-payment-box">
-              <p className="eyebrow">
-                SECURE PAYMENT
-              </p>
+          {/* =================================
+              PAYMENT METHOD
+              ================================= */}
 
-              <h2>
-                Pay using UPI
-              </h2>
+          <div className="payment-method-box">
 
-              <p className="upi-instruction">
-                Scan the QR code below and
-                complete the payment before
-                submitting your order.
-              </p>
+            <p className="eyebrow">
+              PAYMENT
+            </p>
 
-              {settings.upiQr ? (
-                <div className="upi-qr-wrapper">
-                  <img
-                    src={settings.upiQr}
-                    alt="Kshatriya Kitchen UPI QR Code"
-                    className="upi-qr"
-                  />
-                </div>
-              ) : (
-                <div className="upi-no-qr">
-                  QR code is not configured
-                  yet.
-                </div>
-              )}
+            <h2>
+              Choose payment method
+            </h2>
 
-              {settings.upiId &&
-                settings.upiId !== "EDIT_ME" && (
-                  <div className="upi-id-display">
-                    <span>
-                      UPI ID
-                    </span>
+            {settings.upiEnabled && (
+              <label className="payment-option">
+                <input
+                  type="radio"
+                  name="paymentMethod"
+                  value="UPI"
+                  checked={
+                    paymentMethod === "UPI"
+                  }
+                  onChange={() => {
+                    setPaymentMethod("UPI");
+                    setPaymentError("");
+                  }}
+                />
 
-                    <strong>
-                      {settings.upiId}
-                    </strong>
+                <span>
+                  <strong>
+                    UPI / Online Payment
+                  </strong>
+
+                  <small>
+                    Pay now using the UPI QR code.
+                  </small>
+                </span>
+              </label>
+            )}
+
+            <label
+              className={
+                codAvailable
+                  ? "payment-option"
+                  : "payment-option disabled"
+              }
+            >
+              <input
+                type="radio"
+                name="paymentMethod"
+                value="COD"
+                checked={
+                  paymentMethod === "COD"
+                }
+                onChange={() => {
+                  if (!codAvailable) {
+                    return;
+                  }
+
+                  setPaymentMethod("COD");
+                  setPaymentError("");
+                }}
+                disabled={!codAvailable}
+              />
+
+              <span>
+                <strong>
+                  Cash on Delivery
+                </strong>
+
+                <small>
+                  {codAvailable
+                    ? "Available for orders up to ₹400."
+                    : "Not available for orders above ₹400."}
+                </small>
+              </span>
+            </label>
+
+            {!codAvailable && (
+              <div className="payment-pending-note">
+                COD is unavailable because your
+                order total is above ₹400. Please
+                use online payment.
+              </div>
+            )}
+
+          </div>
+
+          {/* =================================
+              UPI PAYMENT
+              ================================= */}
+
+          {paymentMethod === "UPI" &&
+            settings.upiEnabled && (
+              <div className="upi-payment-box">
+
+                <p className="eyebrow">
+                  SECURE PAYMENT
+                </p>
+
+                <h2>
+                  Pay using UPI
+                </h2>
+
+                <p className="upi-instruction">
+                  Scan the QR code below and
+                  complete the payment before
+                  submitting your order.
+                </p>
+
+                {settings.upiQr ? (
+                  <div className="upi-qr-wrapper">
+                    <img
+                      src={settings.upiQr}
+                      alt="Kshatriya Kitchen UPI QR Code"
+                      className="upi-qr"
+                    />
+                  </div>
+                ) : (
+                  <div className="upi-no-qr">
+                    QR code is not configured
+                    yet.
                   </div>
                 )}
 
-              <label>
-                UPI Transaction ID
+                {settings.upiId &&
+                  settings.upiId !== "EDIT_ME" && (
+                    <div className="upi-id-display">
+                      <span>
+                        UPI ID
+                      </span>
 
-                <input
-                  value={transactionId}
-                  onChange={(event) => {
-                    setTransactionId(
-                      event.target.value
-                    );
-                    setPaymentError("");
-                  }}
-                  placeholder="Enter transaction ID after payment"
-                />
-              </label>
+                      <strong>
+                        {settings.upiId}
+                      </strong>
+                    </div>
+                  )}
 
-              {paymentError && (
-                <p className="upi-error">
-                  {paymentError}
-                </p>
-              )}
+                <label>
+                  UPI Transaction ID
 
-              <div className="payment-pending-note">
-                After payment, enter your
-                Transaction ID and click
-                <strong>
-                  {" "}
-                  I've Paid & Place Order
-                </strong>
-                .
+                  <input
+                    value={transactionId}
+                    onChange={(event) => {
+                      setTransactionId(
+                        event.target.value
+                      );
+                      setPaymentError("");
+                    }}
+                    placeholder="Enter transaction ID after payment"
+                  />
+                </label>
+
+                {paymentError && (
+                  <p className="upi-error">
+                    {paymentError}
+                  </p>
+                )}
+
+                <div className="payment-pending-note">
+                  After completing payment, enter
+                  your Transaction ID and continue.
+                </div>
+
               </div>
-            </div>
-          )}
+            )}
+
+          {/* =================================
+              FINAL ORDER BUTTON
+              ================================= */}
 
           <button
             className="gold-button full"
             type="submit"
           >
-            {settings.upiEnabled
-              ? "I've Paid & Place Order"
-              : "Send order on WhatsApp"}
+            {paymentMethod === "COD"
+              ? "Confirm COD Order"
+              : "I've Paid & Place Order"}
           </button>
+
         </form>
 
+        {/* =================================
+            ORDER SUMMARY
+            ================================= */}
+
         <div className="summary-card">
+
           <h2>
             Order summary
           </h2>
@@ -1595,15 +1786,26 @@ function Checkout({
             </strong>
           </div>
 
-          {settings.upiEnabled && (
+          <p className="summary-note">
+            Payment method:{" "}
+            <strong>
+              {paymentMethod === "COD"
+                ? "Cash on Delivery"
+                : "UPI / Online Payment"}
+            </strong>
+          </p>
+
+          {paymentMethod === "COD" && (
             <p className="summary-note">
-              Payment status:{" "}
+              COD limit:{" "}
               <strong>
-                Verification Pending
+                ₹400 maximum
               </strong>
             </p>
           )}
+
         </div>
+
       </div>
     </section>
   );
@@ -2428,7 +2630,6 @@ function CustomerLogin({ onClose, onSuccess }) {
   const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Automatically detect Email or WhatsApp number
   const isPhone = /^\s*[0-9]/.test(loginValue);
 
   const cleanPhone = loginValue
@@ -2438,9 +2639,6 @@ function CustomerLogin({ onClose, onSuccess }) {
   const cleanEmail = loginValue.trim().toLowerCase();
 
   async function sendOtp() {
-    // ==============================
-    // WHATSAPP LOGIN
-    // ==============================
     if (isPhone) {
       if (cleanPhone.length !== 10) {
         alert(
@@ -2449,24 +2647,13 @@ function CustomerLogin({ onClose, onSuccess }) {
         return;
       }
 
-      /*
-       * WhatsApp OTP provider will be connected here.
-       *
-       * Supabase email OTP cannot send a WhatsApp OTP.
-       * We will connect the actual WhatsApp OTP provider
-       * separately.
-       */
-
       alert(
-        `WhatsApp OTP will be sent to +91 ${cleanPhone} once WhatsApp OTP is connected.`
+        "WhatsApp OTP verification is coming soon. For now, please use your email address to login."
       );
 
       return;
     }
 
-    // ==============================
-    // EMAIL LOGIN
-    // ==============================
     if (!cleanEmail) {
       alert(
         "Please enter your email address or WhatsApp number."
@@ -2482,9 +2669,7 @@ function CustomerLogin({ onClose, onSuccess }) {
     }
 
     if (!supabase) {
-      alert(
-        "Supabase is not configured."
-      );
+      alert("Supabase is not configured.");
       return;
     }
 
@@ -2507,41 +2692,29 @@ function CustomerLogin({ onClose, onSuccess }) {
 
     setOtpSent(true);
 
-    alert(
-      "OTP sent to your email."
-    );
+    alert("OTP sent to your email.");
   }
 
   async function verifyOtp() {
     const cleanOtp = otp.trim();
 
     if (!cleanOtp) {
-      alert(
-        "Please enter the OTP."
-      );
+      alert("Please enter the OTP.");
       return;
     }
 
     if (!supabase) {
-      alert(
-        "Supabase is not configured."
-      );
+      alert("Supabase is not configured.");
       return;
     }
 
-    // ==============================
-    // WHATSAPP OTP VERIFICATION
-    // ==============================
     if (isPhone) {
       alert(
-        "WhatsApp OTP verification will be connected in the next step."
+        "WhatsApp OTP verification is coming soon. Please use email login for now."
       );
       return;
     }
 
-    // ==============================
-    // EMAIL OTP VERIFICATION
-    // ==============================
     setLoading(true);
 
     const { data, error } =
@@ -2571,19 +2744,15 @@ function CustomerLogin({ onClose, onSuccess }) {
   function handleLoginValueChange(event) {
     const value = event.target.value;
 
-    // If user starts with a number,
-    // switch to WhatsApp mode.
     if (/^\s*[0-9]/.test(value)) {
       setLoginValue(
         value
           .replace(/\D/g, "")
           .slice(0, 10)
       );
-
       return;
     }
 
-    // Otherwise use Email mode.
     setLoginValue(value);
   }
 
@@ -2611,9 +2780,7 @@ function CustomerLogin({ onClose, onSuccess }) {
 
         <p className="login-subtitle">
           {otpSent
-            ? isPhone
-              ? `We sent a verification code to +91 ${cleanPhone}`
-              : `We sent a verification code to ${cleanEmail}`
+            ? `We sent a verification code to ${cleanEmail}`
             : "Login with your email / WhatsApp number to continue your order."}
         </p>
 
@@ -2660,6 +2827,14 @@ function CustomerLogin({ onClose, onSuccess }) {
               />
             </div>
 
+            {isPhone && (
+              <p className="login-whatsapp-note">
+                WhatsApp OTP verification is coming soon.
+                <br />
+                For now, please use email login.
+              </p>
+            )}
+
             <button
               className="gold-button full"
               onClick={sendOtp}
@@ -2668,7 +2843,7 @@ function CustomerLogin({ onClose, onSuccess }) {
               {loading
                 ? "Sending OTP..."
                 : isPhone
-                  ? "Send OTP to WhatsApp"
+                  ? "WhatsApp OTP Coming Soon"
                   : "Send OTP to Email"}
             </button>
           </>
