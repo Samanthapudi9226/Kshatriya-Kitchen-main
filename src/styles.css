@@ -1809,7 +1809,7 @@ textarea { min-height: 90px; resize: vertical; }
     cursor: not-allowed;
     opacity: 0.55;
   }
-/* =========================================================
+  /* =========================================================
    KSHATRIYA KITCHEN — PREMIUM CUSTOMER ACCOUNT
    Account page only
    ========================================================= */
@@ -2252,5 +2252,49 @@ textarea { min-height: 90px; resize: vertical; }
 
   .account-page .account-order-bottom > strong {
     max-width: 65%;
+  }
+}
+.delivery-distance-box {
+  margin: 6px 0 22px;
+  padding: 16px 18px;
+  border: 1px solid rgba(80, 35, 25, 0.1);
+  border-radius: 14px;
+  background: rgba(120, 70, 35, 0.045);
+}
+
+.delivery-distance-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 7px 0;
+}
+
+.delivery-distance-row span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.delivery-distance-row strong {
+  color: var(--maroon-dark);
+  font-size: 14px;
+}
+
+.delivery-distance-note {
+  margin: 10px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid rgba(80, 35, 25, 0.08);
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+@media (max-width: 759px) {
+  .delivery-distance-box {
+    padding: 14px 15px;
+  }
+
+  .delivery-distance-row {
+    gap: 10px;
   }
 }
