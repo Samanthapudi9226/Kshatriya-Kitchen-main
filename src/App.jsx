@@ -698,19 +698,20 @@ function sendCustomerStatusWhatsApp(order, newStatus) {
   window.open(url, "_blank");
 }
 
-  if (admin) {
-    return (
-      <Admin
-        menu={menu}
-        setMenu={setMenu}
-        settings={settings}
-        setSettings={setSettings}
-        orders={orders}
-        setOrders={setOrders}
-        exit={() => setAdmin(false)}
-      />
-    );
-  }
+if (admin) {
+  return (
+    <Admin
+      menu={menu}
+      setMenu={setMenu}
+      settings={settings}
+      setSettings={setSettings}
+      orders={orders}
+      setOrders={setOrders}
+      sendCustomerStatusWhatsApp={sendCustomerStatusWhatsApp}
+      exit={() => setAdmin(false)}
+    />
+  );
+}
 
   if (isAdminPath) {
     return (
@@ -1897,180 +1898,6 @@ function Admin({
   exit,
   sendCustomerStatusWhatsApp
 }) {
-  const [soundEnabled, setSoundEnabled] =
-  useState(false);
-
-const knownOrderIdsRef = useRef(
-  new Set()
-);
-
-const soundEnabledRef = useRef(false);
-
-function playNewOrderSound() {
-  try {
-    const AudioContext =
-      window.AudioContext ||
-      window.webkitAudioContext;
-
-    if (!AudioContext) {
-      return;
-    }
-
-    const audioContext =
-      new AudioContext();
-
-    const oscillator =
-      audioContext.createOscillator();
-
-    const gain =
-      audioContext.createGain();
-
-    oscillator.type = "sine";
-
-    oscillator.frequency.setValueAtTime(
-      880,
-      audioContext.currentTime
-    );
-
-    oscillator.frequency.setValueAtTime(
-      1174,
-      audioContext.currentTime + 0.12
-    );
-
-    oscillator.frequency.setValueAtTime(
-      880,
-      audioContext.currentTime + 0.24
-    );
-
-    gain.gain.setValueAtTime(
-      0.0001,
-      audioContext.currentTime
-    );
-
-    gain.gain.exponentialRampToValueAtTime(
-      0.25,
-      audioContext.currentTime + 0.02
-    );
-
-    gain.gain.exponentialRampToValueAtTime(
-      0.0001,
-      audioContext.currentTime + 0.45
-    );
-
-    oscillator.connect(gain);
-    gain.connect(audioContext.destination);
-
-    oscillator.start();
-
-    oscillator.stop(
-      audioContext.currentTime + 0.5
-    );
-  } catch (error) {
-    console.error(
-      "Could not play notification sound:",
-      error
-    );
-  }
-}
-
-useEffect(() => {
-  soundEnabledRef.current =
-    soundEnabled;
-}, [soundEnabled]);
-
-useEffect(() => {
-  if (!supabase || !loggedIn) {
-    return;
-  }
-
-  let cancelled = false;
-  let firstLoad = true;
-
-  async function loadAdminOrders() {
-    const { data, error } =
-      await supabase
-        .from("orders")
-        .select(
-          "id, order_data, created_at, updated_at"
-        )
-        .order("created_at", {
-          ascending: false
-        });
-
-    if (error) {
-      console.error(
-        "Could not load admin orders:",
-        error
-      );
-      return;
-    }
-
-    if (cancelled) {
-      return;
-    }
-
-    const latestOrders =
-      (data || []).map((row) => ({
-        ...(row.order_data || {}),
-        id: row.id,
-        createdAt:
-          row.order_data?.createdAt ||
-          row.created_at
-      }));
-
-    const latestIds = new Set(
-      latestOrders.map(
-        (order) => order.id
-      )
-    );
-
-    // First successful load:
-    // show all existing orders without
-    // playing the new-order sound.
-    if (firstLoad) {
-      knownOrderIdsRef.current =
-        latestIds;
-
-      setOrders(latestOrders);
-
-      firstLoad = false;
-
-      return;
-    }
-
-    const newOrders =
-      latestOrders.filter(
-        (order) =>
-          !knownOrderIdsRef.current.has(
-            order.id
-          )
-      );
-
-    setOrders(latestOrders);
-
-    if (
-      newOrders.length > 0 &&
-      soundEnabledRef.current
-    ) {
-      playNewOrderSound();
-    }
-
-    knownOrderIdsRef.current =
-      latestIds;
-  }
-
-  loadAdminOrders();
-
-  const interval = setInterval(
-    loadAdminOrders,
-    5000
-  );
-
-  return () => {
-    cancelled = true;
-    clearInterval(interval);
-  };
-}, [loggedIn, setOrders]);
   const [loggedIn, setLoggedIn] =
     useState(false);
 
@@ -2085,6 +1912,179 @@ useEffect(() => {
 
   const [tab, setTab] =
     useState("dashboard");
+    const [soundEnabled, setSoundEnabled] =
+    useState(false);
+
+  const knownOrderIdsRef = useRef(
+    new Set()
+  );
+
+  const soundEnabledRef = useRef(false);
+
+  function playNewOrderSound() {
+    try {
+      const AudioContext =
+        window.AudioContext ||
+        window.webkitAudioContext;
+
+      if (!AudioContext) {
+        return;
+      }
+
+      const audioContext =
+        new AudioContext();
+
+      const oscillator =
+        audioContext.createOscillator();
+
+      const gain =
+        audioContext.createGain();
+
+      oscillator.type = "sine";
+
+      oscillator.frequency.setValueAtTime(
+        880,
+        audioContext.currentTime
+      );
+
+      oscillator.frequency.setValueAtTime(
+        1174,
+        audioContext.currentTime + 0.12
+      );
+
+      oscillator.frequency.setValueAtTime(
+        880,
+        audioContext.currentTime + 0.24
+      );
+
+      gain.gain.setValueAtTime(
+        0.0001,
+        audioContext.currentTime
+      );
+
+      gain.gain.exponentialRampToValueAtTime(
+        0.25,
+        audioContext.currentTime + 0.02
+      );
+
+      gain.gain.exponentialRampToValueAtTime(
+        0.0001,
+        audioContext.currentTime + 0.45
+      );
+
+      oscillator.connect(gain);
+      gain.connect(audioContext.destination);
+
+      oscillator.start();
+
+      oscillator.stop(
+        audioContext.currentTime + 0.5
+      );
+    } catch (error) {
+      console.error(
+        "Could not play notification sound:",
+        error
+      );
+    }
+  }
+
+  useEffect(() => {
+    soundEnabledRef.current =
+      soundEnabled;
+  }, [soundEnabled]);
+
+  useEffect(() => {
+    if (!supabase || !loggedIn) {
+      return;
+    }
+
+    let cancelled = false;
+    let firstLoad = true;
+
+    async function loadAdminOrders() {
+      const { data, error } =
+        await supabase
+          .from("orders")
+          .select(
+            "id, order_data, created_at, updated_at"
+          )
+          .order("created_at", {
+            ascending: false
+          });
+
+      if (error) {
+        console.error(
+          "Could not load admin orders:",
+          error
+        );
+        return;
+      }
+
+      if (cancelled) {
+        return;
+      }
+
+      const latestOrders =
+        (data || []).map((row) => ({
+          ...(row.order_data || {}),
+          id: row.id,
+          createdAt:
+            row.order_data?.createdAt ||
+            row.created_at
+        }));
+
+      const latestIds =
+        new Set(
+          latestOrders.map(
+            (order) => order.id
+          )
+        );
+
+      if (firstLoad) {
+        knownOrderIdsRef.current =
+          latestIds;
+
+        setOrders(latestOrders);
+
+        firstLoad = false;
+
+        return;
+      }
+
+      const newOrders =
+        latestOrders.filter(
+          (order) =>
+            !knownOrderIdsRef.current.has(
+              order.id
+            )
+        );
+
+      setOrders(latestOrders);
+
+      if (
+        newOrders.length > 0 &&
+        soundEnabledRef.current
+      ) {
+        playNewOrderSound();
+      }
+
+      knownOrderIdsRef.current =
+        latestIds;
+    }
+
+    loadAdminOrders();
+
+    const interval =
+      setInterval(
+        loadAdminOrders,
+        5000
+      );
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [loggedIn, setOrders]);
 
   if (!loggedIn) {
     return (
@@ -2862,7 +2862,6 @@ function AdminDashboard({
   <button
     className="gold-button"
     onClick={() => {
-      soundEnabledRef.current = true;
       setSoundEnabled(true);
       playNewOrderSound();
     }}
