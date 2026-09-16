@@ -1661,7 +1661,8 @@ textarea { min-height: 90px; resize: vertical; }
         border-radius: 50%;
       }
     }
-/* =========================================
+
+    /* =========================================
    FINAL HERO CIRCLE FIX
    ========================================= */
 
@@ -1745,3 +1746,29 @@ textarea { min-height: 90px; resize: vertical; }
     border-width: 6px !important;
   }
 }
+/* =========================================
+   EMAIL / WHATSAPP LOGIN INPUT
+   ========================================= */
+
+   .login-input-wrapper {
+    position: relative;
+    width: 100%;
+  }
+  
+  .phone-prefix {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+  
+    color: var(--gold-light);
+    font-weight: 700;
+    font-size: 15px;
+  
+    pointer-events: none;
+    z-index: 2;
+  }
+  
+  .login-input.phone-input {
+    padding-left: 55px;
+  }
