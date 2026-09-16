@@ -403,8 +403,7 @@ const [showProfileSetup, setShowProfileSetup] = useState(false);
     () =>
       menu.filter(
         (item) =>
-          item.available &&
-          (category === "All" || item.category === category)
+          category === "All" || item.category === category
       ),
     [menu, category]
   );
@@ -1216,15 +1215,26 @@ if (admin) {
 
 function FoodCard({ item, addToCart, view }) {
   return (
-    <article className="food-card">
+    <article
+      className={`food-card ${
+        item.available ? "" : "unavailable"
+      }`}
+    >
       <button
         className="image-button"
-        onClick={view}
+        onClick={item.available ? view : undefined}
+        disabled={!item.available}
       >
         <img
           src={item.image}
           alt={item.name}
         />
+
+        {!item.available && (
+          <span className="unavailable-overlay">
+            Unavailable
+          </span>
+        )}
       </button>
 
       <div className="food-card-body">
@@ -1244,9 +1254,10 @@ function FoodCard({ item, addToCart, view }) {
           <button
             className="add-button"
             onClick={() => addToCart(item)}
+            disabled={!item.available}
           >
             <Plus size={18} />
-            Add
+            {item.available ? "Add" : "Unavailable"}
           </button>
         </div>
       </div>
