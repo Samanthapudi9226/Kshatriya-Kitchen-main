@@ -2481,21 +2481,21 @@ textarea { min-height: 90px; resize: vertical; }
     align-items: center;
     justify-content: center;
   
-    width: 0.92em;
-    height: 0.92em;
+    width: 1.12em;
+    height: 1.12em;
   
-    margin: 0 0.03em;
+    margin: 0 0.04em;
   
-    border: 1px solid var(--gold-light);
+    border: 1.5px solid var(--gold-light);
     border-radius: 50%;
   
     color: var(--gold-light);
   
-    font-size: 0.72em;
+    font-size: 0.82em;
     font-weight: 700;
     line-height: 1;
   
-    vertical-align: 0.08em;
+    vertical-align: 0.02em;
     box-sizing: border-box;
   }
   
