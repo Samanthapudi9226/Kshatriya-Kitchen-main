@@ -24,20 +24,92 @@ img { display: block; max-width: 100%; }
 .brand strong { display: block; font-family: "Cormorant Garamond", serif; font-size: 22px; }
 .brand small { color: var(--gold-light); font-size: 10px; letter-spacing: .08em; }
 .brand-mark { display: grid; place-items: center; width: 43px; height: 43px; border: 1px solid var(--gold); color: var(--gold-light); font-family: "Cormorant Garamond", serif; font-weight: 700; font-size: 17px; }
-nav {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
+/* =========================================================
+   PREMIUM MAIN NAVIGATION
+   ========================================================= */
 
-nav button {
-  border: 0;
-  background: none;
-  color: inherit;
-  padding: 8px 4px;
-  font-size: 13px;
-}
-nav button, .text-button { border: 0; background: none; color: inherit; }
+   nav {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  
+  nav button {
+    position: relative;
+  
+    border: 0;
+    border-radius: 999px;
+  
+    background: transparent;
+    color: rgba(255, 255, 255, 0.72);
+  
+    padding: 9px 15px;
+  
+    font-family: "DM Sans", sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+  
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  
+    cursor: pointer;
+  
+    transition:
+      color 0.2s ease,
+      background 0.2s ease,
+      transform 0.2s ease;
+  }
+  
+  /* Gold underline */
+  nav button::after {
+    content: "";
+  
+    position: absolute;
+    left: 50%;
+    bottom: 4px;
+  
+    width: 0;
+    height: 1px;
+  
+    background: var(--gold-light);
+  
+    transform: translateX(-50%);
+  
+    transition: width 0.25s ease;
+  }
+  
+  /* Hover */
+  nav button:hover {
+    color: var(--gold-light);
+    background: rgba(216, 182, 107, 0.07);
+  }
+  
+  nav button:hover::after {
+    width: 45%;
+  }
+  
+  /* Active page */
+  nav button.active {
+    color: var(--gold-light);
+    background: rgba(216, 182, 107, 0.10);
+  }
+  
+  nav button.active::after {
+    width: 45%;
+  }
+  
+  /* Small lift */
+  nav button:hover,
+  nav button.active {
+    transform: translateY(-1px);
+  }
+  
+  nav button,
+  .text-button {
+    border: 0;
+    background: none;
+    color: inherit;
+  }
 .cart-button {
   position: relative;
   width: 42px;
@@ -1807,18 +1879,37 @@ textarea { min-height: 90px; resize: vertical; }
   }
 
   .mobile-nav button {
+    position: relative;
+  
     width: 100%;
-    padding: 15px 20px;
-
+    padding: 16px 20px;
+  
     border: 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  
     background: transparent;
-    color: white;
-
+    color: rgba(255, 255, 255, 0.78);
+  
     text-align: left;
-    font-size: 14px;
-    font-weight: 600;
+  
+    font-family: "DM Sans", sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+  
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  
+    transition:
+      background 0.2s ease,
+      color 0.2s ease,
+      padding-left 0.2s ease;
+  }
+  
+  .mobile-nav button:hover,
+  .mobile-nav button:active {
+    background: rgba(216, 182, 107, 0.10);
+    color: var(--gold-light);
+    padding-left: 26px;
   }
 
   .mobile-nav button:active {
