@@ -612,15 +612,17 @@ textarea { min-height: 90px; resize: vertical; }
   }
 }
 /* =========================================================
-   KSHATRIYAS KITCHEN — CLEAN PREMIUM FOOTER
+   PREMIUM COMPACT FOOTER / CONTACT
    ========================================================= */
 
    .contact-section {
     position: relative;
     margin-top: 0;
-    padding: 30px 6% 14px;
+    padding: 42px 6% 18px;
+  
     background: var(--maroon-dark);
     color: #fff;
+  
     border-top: 1px solid rgba(216, 182, 107, 0.22);
   }
   
@@ -629,117 +631,163 @@ textarea { min-height: 90px; resize: vertical; }
     margin: 0 auto;
   }
   
-  /* Small heading */
-  
+  /* Small brand label */
   .contact-inner > .eyebrow {
-    margin: 0 0 4px;
+    margin: 0 0 6px;
+  
     color: var(--gold-light);
+  
     font-size: 8px;
     font-weight: 800;
+  
     letter-spacing: 0.22em;
     text-transform: uppercase;
   }
   
+  /* Main heading */
   .contact-inner h2 {
-    margin: 0;
+    margin: 0 0 10px;
+  
     color: #fff;
+  
     font-family: "Cormorant Garamond", serif;
-    font-size: clamp(32px, 4vw, 44px);
+    font-size: clamp(30px, 4vw, 42px);
     font-weight: 600;
-    line-height: 0.95;
+  
+    line-height: 1;
   }
   
-  /* Owner */
-  
+  /* Owner + address — compact */
   .contact-owner {
-    margin: 7px 0 2px;
-    color: rgba(255, 255, 255, 0.88);
-    font-size: 11px;
-    font-weight: 700;
+    display: inline;
+    margin: 0;
+  
+    color: rgba(255, 255, 255, 0.82);
+  
+    font-size: 10px;
+    font-weight: 600;
   }
   
   .contact-address {
-    max-width: 600px;
-    margin: 0;
+    display: inline;
+    margin: 0 0 0 14px;
+  
     color: rgba(255, 255, 255, 0.48);
+  
     font-size: 10px;
-    line-height: 1.45;
+    line-height: 1.5;
   }
   
-  /* Contact information */
+  .contact-address::before {
+    content: "•";
+    margin-right: 14px;
   
+    color: var(--gold);
+  }
+  
+  /* Phone + Opening Hours */
   .contact-details {
     display: flex;
+    align-items: center;
     flex-wrap: wrap;
-    gap: 7px;
-    margin-top: 13px;
+  
+    gap: 22px;
+  
+    margin-top: 14px;
   }
   
   .contact-details p {
     margin: 0;
-    padding: 9px 13px;
-    border-left: 1px solid rgba(216, 182, 107, 0.45);
+    padding-left: 11px;
+  
+    border-left: 1px solid rgba(216, 182, 107, 0.4);
+  
     color: rgba(255, 255, 255, 0.65);
+  
     font-size: 10px;
     line-height: 1.35;
   }
   
   .contact-details strong {
-    display: block;
-    margin-bottom: 2px;
+    display: inline;
+  
+    margin-right: 5px;
+  
     color: var(--gold-light);
-    font-size: 7px;
+  
+    font-size: 8px;
     font-weight: 800;
-    letter-spacing: 0.16em;
+  
+    letter-spacing: 0.08em;
     text-transform: uppercase;
   }
   
-  /* Links */
-  
+  /* Social / map links */
   .contact-links {
     display: flex;
+    align-items: center;
     flex-wrap: wrap;
+  
     gap: 6px;
-    margin-top: 12px;
+  
+    margin-top: 15px;
   }
   
   .contact-links a {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 30px;
-    padding: 0 13px;
-    border: 1px solid rgba(216, 182, 107, 0.28);
+  
+    min-height: 27px;
+    padding: 0 11px;
+  
+    border: 1px solid rgba(216, 182, 107, 0.25);
     border-radius: 999px;
+  
     background: transparent;
-    color: rgba(255, 255, 255, 0.82);
+  
+    color: rgba(255, 255, 255, 0.72);
+  
     text-decoration: none;
-    font-size: 9px;
+  
+    font-size: 8px;
     font-weight: 700;
+  
+    letter-spacing: 0.04em;
+  
     transition:
       background 0.2s ease,
       border-color 0.2s ease,
-      color 0.2s ease;
+      color 0.2s ease,
+      transform 0.2s ease;
   }
   
   .contact-links a:hover {
     background: var(--gold);
     border-color: var(--gold);
+  
     color: var(--maroon-dark);
+  
+    transform: translateY(-1px);
   }
   
-  /* Bottom line */
-  
+  /* Copyright */
   .contact-inner::after {
     content: "© KshatriyaS Kitchen • Signature of Samanthapudi";
+  
     display: block;
+  
     margin-top: 18px;
     padding-top: 9px;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    color: rgba(255, 255, 255, 0.28);
+  
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+  
+    color: rgba(255, 255, 255, 0.25);
+  
     font-size: 7px;
     letter-spacing: 0.06em;
   }
+  
   
   /* =========================================================
      MOBILE
@@ -748,55 +796,62 @@ textarea { min-height: 90px; resize: vertical; }
   @media (max-width: 759px) {
   
     .contact-section {
-      padding: 26px 16px 12px;
+      padding: 34px 18px 15px;
     }
   
     .contact-inner > .eyebrow {
+      margin-bottom: 5px;
       font-size: 7px;
-      margin-bottom: 3px;
     }
   
     .contact-inner h2 {
-      font-size: 34px;
+      margin-bottom: 9px;
+  
+      font-size: 32px;
+      line-height: 0.98;
     }
   
-    .contact-owner {
-      margin-top: 6px;
-      font-size: 10px;
-    }
-  
+    .contact-owner,
     .contact-address {
       font-size: 9px;
     }
   
+    .contact-address {
+      margin-left: 10px;
+    }
+  
+    .contact-address::before {
+      margin-right: 10px;
+    }
+  
     .contact-details {
-      gap: 5px;
-      margin-top: 10px;
+      gap: 12px;
+      margin-top: 12px;
     }
   
     .contact-details p {
-      padding: 7px 9px;
+      padding-left: 9px;
       font-size: 9px;
     }
   
     .contact-details strong {
-      font-size: 6px;
+      font-size: 7px;
     }
   
     .contact-links {
       gap: 5px;
-      margin-top: 9px;
+      margin-top: 12px;
     }
   
     .contact-links a {
-      min-height: 28px;
-      padding: 0 11px;
-      font-size: 8px;
+      min-height: 26px;
+      padding: 0 10px;
+      font-size: 7px;
     }
   
     .contact-inner::after {
-      margin-top: 14px;
-      padding-top: 7px;
+      margin-top: 15px;
+      padding-top: 8px;
       font-size: 6px;
     }
   }
