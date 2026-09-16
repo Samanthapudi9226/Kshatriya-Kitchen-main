@@ -897,11 +897,15 @@ if (admin) {
       setMobileMenuOpen(false);
     }}
   >
-    <span className="brand-mark">KK</span>
-    <span>
-      <strong>{settings.name}</strong>
-      <small>{settings.tagline}</small>
-    </span>
+    <span className="brand-mark brand-signature-mark">S</span>
+
+<span className="brand-text">
+  <strong>
+    Kshatriya<span className="brand-signature-s">S</span> Kitchen
+  </strong>
+
+  <small>Signature of Samanthapudi</small>
+</span>
   </button>
 
   {/* Desktop Navigation */}
@@ -1199,9 +1203,9 @@ if (admin) {
         )}
         <section className="contact-section">
   <div className="contact-inner">
-    <p className="eyebrow">
-      KSHATRIYA KITCHEN
-    </p>
+  <p className="eyebrow">
+  KSHATRIYAS KITCHEN
+</p>
 
     <h2>
       Visit or connect with us
@@ -1860,7 +1864,7 @@ function Checkout({
                   <div className="upi-qr-wrapper">
                     <img
                       src={settings.upiQr}
-                      alt="Kshatriya Kitchen UPI QR Code"
+                      alt="KshatriyaS Kitchen UPI QR Code"
                       className="upi-qr"
                     />
                   </div>
@@ -3516,8 +3520,8 @@ function CustomerProfileSetup({
         </div>
 
         <p className="eyebrow">
-          WELCOME TO KSHATRIYA KITCHEN
-        </p>
+  WELCOME TO KSHATRIYAS KITCHEN
+</p>
 
         <h1>
           Complete your profile
