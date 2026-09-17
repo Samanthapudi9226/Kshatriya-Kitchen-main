@@ -1,6 +1,6 @@
   import { useEffect, useMemo, useRef, useState } from "react";
   import MobileApp from "./MobileApp";
-
+  import { Capacitor } from "@capacitor/core";
   import { restaurantDefaults, supabase } from "./config";
   import {
     ArrowLeft,
@@ -860,8 +860,8 @@
         />
       );
     }
-    const isNativeApp = window.location.protocol === "capacitor:";
-    console.log("PROTOCOL:", window.location.protocol);
+    const isNativeApp = Capacitor.isNativePlatform();
+    
 
     if (isNativeApp) {
       return (
