@@ -151,6 +151,7 @@ export default function MobileApp({
   };
 
   const handleHome = () => {
+    setMobilePage("home");
     setSearch("");
     setActiveCategory("All");
     window.scrollTo({
@@ -194,7 +195,7 @@ if (mobilePage === "orders") {
         <button
           type="button"
           className="kk-nav-item"
-          onClick={() => window.location.reload()}
+          onClick={handleHome}
         >
           <span>⌂</span>
           <small>Home</small>
