@@ -861,6 +861,7 @@
       );
     }
     const isNativeApp = window.location.protocol === "capacitor:";
+    console.log("PROTOCOL:", window.location.protocol);
 
     if (isNativeApp) {
       return (
