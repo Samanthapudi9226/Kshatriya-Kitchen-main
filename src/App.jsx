@@ -1,6 +1,7 @@
   import { useEffect, useMemo, useRef, useState } from "react";
   import MobileApp from "./MobileApp";
   import { Capacitor } from "@capacitor/core";
+  import { Geolocation } from "@capacitor/geolocation";
   import { restaurantDefaults, supabase } from "./config";
   import {
     ArrowLeft,
@@ -555,6 +556,65 @@
           .filter((item) => item.quantity > 0)
       );
     }
+    
+    async function handleNativeLocation() {
+  if (!customerUser?.id) {
+    alert("Please login first to save your delivery location.");
+    return;
+  }
+
+  try {
+    const permissions = await Geolocation.checkPermissions();
+
+    if (permissions.location !== "granted") {
+      const requested = await Geolocation.requestPermissions();
+
+      if (requested.location !== "granted") {
+        alert("Please allow location access for Kshatriya Kitchen.");
+        return;
+      }
+    }
+
+    const position = await Geolocation.getCurrentPosition({
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 0,
+    });
+
+    const latitude = position.coords.latitude;
+    const longitude = position.coords.longitude;
+
+    const currentProfile = customerProfile || {
+      id: customerUser.id,
+      email: customerUser.email || "",
+      name: "",
+      phone: "",
+      address: "",
+    };
+
+    const updatedProfile = {
+      ...currentProfile,
+      id: customerUser.id,
+      email: currentProfile.email || customerUser.email || "",
+      latitude,
+      longitude,
+    };
+
+    const success = await saveCustomerProfile(updatedProfile);
+
+    if (!success) {
+      alert("Location was detected, but could not be saved.");
+      return;
+    }
+
+    setCustomerProfile(updatedProfile);
+
+    alert("Your current location has been saved.");
+  } catch (error) {
+    console.error("Could not get current location:", error);
+    alert("Could not get your current location. Please try again.");
+  }
+}
 
     function startCheckout() {
       if (!cart.length) {
@@ -583,8 +643,13 @@
         return;
       }
     
-      setPage("checkout");
-      setCartOpen(false);
+      if (Capacitor.isNativePlatform()) {
+  setMobilePage("checkout");
+} else {
+  setPage("checkout");
+}
+
+setCartOpen(false);
     }
 
   async function placeOrder(
@@ -895,19 +960,64 @@ if (isNativeApp) {
         />
       ) : null}
 
-      <MobileApp
-        menu={menu}
-        settings={settings}
-        cart={cart}
-        customerUser={customerUser}
-        customerProfile={customerProfile}
-        mobilePage={mobilePage}
-        onAddToCart={addToCart}
-        onCart={() => setCartOpen(true)}
-        onOrders={() => setMobilePage("orders")}
-        onProfile={() => setMobilePage("account")}
-        onLogin={() => setShowLoginPopup(true)}
-      />
+      {mobilePage === "checkout" ? (
+  <Checkout
+    cart={cart}
+    total={total}
+    subtotal={subtotal}
+    delivery={delivery}
+    service={service}
+    tax={tax}
+    settings={settings}
+    customer={customerProfile}
+    deliveryDistance={deliveryDistance}
+    deliveryDistanceLoading={deliveryDistanceLoading}
+    placeOrder={placeOrder}
+    back={() => setMobilePage("home")}
+  />
+) : (
+  <MobileApp
+    menu={menu}
+    settings={settings}
+    cart={cart}
+    customerUser={customerUser}
+    customerProfile={customerProfile}
+    mobilePage={mobilePage}
+    onAddToCart={addToCart}
+    onCart={() => {
+  setCartOpen(true);
+}}
+
+onOrders={() => {
+  setCartOpen(false);
+  setMobilePage("orders");
+}}
+
+onProfile={() => {
+  setCartOpen(false);
+  setMobilePage("account");
+}}
+
+onLogin={() => {
+  setCartOpen(false);
+  setShowLoginPopup(true);
+}}
+
+onHome={() => {
+  setCartOpen(false);
+  setMobilePage("home");
+}}
+    onEditProfile={() => setShowProfileSetup(true)}
+    onLocation={handleNativeLocation}
+    onLogout={async () => {
+      await supabase.auth.signOut();
+      setCustomerUser(null);
+      setCustomerProfile(null);
+      setCustomerOrders([]);
+      setMobilePage("home");
+    }}
+  />
+)}
 
       {cartOpen && (
         <CartDrawer
