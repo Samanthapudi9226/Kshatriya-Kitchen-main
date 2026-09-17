@@ -861,7 +861,6 @@
       );
     }
     const isNativeApp = Capacitor.isNativePlatform();
-    
 
     if (isNativeApp) {
       return (
