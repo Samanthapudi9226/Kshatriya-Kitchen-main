@@ -7,6 +7,7 @@ export default function MobileApp({
   cart = [],
   customerUser = null,
   customerProfile = null,
+  mobilePage = "home",
   onAddToCart,
   onCart,
   onOrders,
@@ -161,6 +162,148 @@ export default function MobileApp({
   const handleSuggestion = (item) => {
     setSearch(getItemName(item));
   };
+
+
+if (mobilePage === "orders") {
+  return (
+    <div className="kk-mobile-app">
+      <header className="kk-mobile-header">
+        <div>
+          <span className="kk-small-label">MY ACCOUNT</span>
+          <h2>My Orders</h2>
+        </div>
+
+        <button
+          type="button"
+          className="kk-profile-button"
+          onClick={onProfile}
+        >
+          👤
+        </button>
+      </header>
+
+      <section className="kk-menu-section">
+        <div className="kk-empty-menu">
+          <div>📦</div>
+          <h3>My Orders</h3>
+          <p>Your orders will appear here.</p>
+        </div>
+      </section>
+
+      <nav className="kk-bottom-nav">
+        <button
+          type="button"
+          className="kk-nav-item"
+          onClick={() => window.location.reload()}
+        >
+          <span>⌂</span>
+          <small>Home</small>
+        </button>
+
+        <button
+          type="button"
+          className="kk-nav-item active"
+        >
+          <span>▣</span>
+          <small>Orders</small>
+        </button>
+
+        <button
+          type="button"
+          className="kk-nav-item kk-nav-cart"
+          onClick={onCart}
+        >
+          <span>🛒</span>
+          <small>Cart</small>
+        </button>
+
+        <button
+          type="button"
+          className="kk-nav-item"
+          onClick={onProfile}
+        >
+          <span>♙</span>
+          <small>Profile</small>
+        </button>
+      </nav>
+    </div>
+  );
+}
+
+if (mobilePage === "account") {
+  return (
+    <div className="kk-mobile-app">
+      <header className="kk-mobile-header">
+        <div>
+          <span className="kk-small-label">MY ACCOUNT</span>
+          <h2>Profile</h2>
+        </div>
+
+        <button
+          type="button"
+          className="kk-profile-button"
+          onClick={onProfile}
+        >
+          👤
+        </button>
+      </header>
+
+      <section className="kk-menu-section">
+        <div className="kk-empty-menu">
+          <div>👤</div>
+          <h3>
+            {customerProfile?.name ||
+              customerUser?.email ||
+              "My Profile"}
+          </h3>
+          <p>
+            {customerProfile?.phone ||
+              "Complete your profile to continue."}
+          </p>
+        </div>
+      </section>
+
+      <nav className="kk-bottom-nav">
+        <button
+          type="button"
+          className="kk-nav-item"
+          onClick={() => window.location.reload()}
+        >
+          <span>⌂</span>
+          <small>Home</small>
+        </button>
+
+        <button
+          type="button"
+          className="kk-nav-item"
+          onClick={onOrders}
+        >
+          <span>▣</span>
+          <small>Orders</small>
+        </button>
+
+        <button
+          type="button"
+          className="kk-nav-item kk-nav-cart"
+          onClick={onCart}
+        >
+          <span>🛒</span>
+          <small>Cart</small>
+        </button>
+
+        <button
+          type="button"
+          className="kk-nav-item active"
+        >
+          <span>♙</span>
+          <small>Profile</small>
+        </button>
+      </nav>
+    </div>
+  );
+}
+
+
 
   return (
     <div className="kk-mobile-app">
