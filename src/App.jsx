@@ -281,6 +281,7 @@
     
       return "home";
     });
+    const [mobilePage, setMobilePage] = useState("home");
     const [category, setCategory] = useState("All");
     const [selected, setSelected] = useState(null);
     const [admin, setAdmin] = useState(false);
@@ -862,22 +863,66 @@
     }
     const isNativeApp = Capacitor.isNativePlatform();
 
-    if (isNativeApp) {
-      return (
-        <MobileApp
-  menu={menu}
-  settings={settings}
-  cart={cart}
-  customerUser={customerUser}
-  customerProfile={customerProfile}
-  onAddToCart={addToCart}
-  onCart={() => setCartOpen(true)}
-  onOrders={() => setPage("orders")}
-  onProfile={() => setPage("account")}
-  onLogin={() => setShowLoginPopup(true)}
-/>
-      );
-    }
+   
+if (isNativeApp) {
+  return (
+    <>
+      {showLoginPopup ? (
+        <CustomerLogin
+          onClose={() => setShowLoginPopup(false)}
+          onSuccess={async (user) => {
+            setShowLoginPopup(false);
+            setCartOpen(false);
+
+            const profile = await loadCustomerProfile(user.id);
+
+            setCustomerUser(user);
+            setCustomerProfile(profile);
+
+            if (
+              !profile ||
+              !profile.name ||
+              !profile.phone ||
+              !profile.address ||
+              !Number.isFinite(Number(profile.latitude)) ||
+              !Number.isFinite(Number(profile.longitude))
+            ) {
+              setShowProfileSetup(true);
+            } else {
+              setMobilePage("account");
+            }
+          }}
+        />
+      ) : null}
+
+      <MobileApp
+        menu={menu}
+        settings={settings}
+        cart={cart}
+        customerUser={customerUser}
+        customerProfile={customerProfile}
+        mobilePage={mobilePage}
+        onAddToCart={addToCart}
+        onCart={() => setCartOpen(true)}
+        onOrders={() => setMobilePage("orders")}
+        onProfile={() => setMobilePage("account")}
+        onLogin={() => setShowLoginPopup(true)}
+      />
+
+      {cartOpen && (
+        <CartDrawer
+          cart={cart}
+          total={total}
+          changeQuantity={changeQuantity}
+          close={() => setCartOpen(false)}
+          checkout={startCheckout}
+        />
+      )}
+    </>
+  );
+}
+
+
 
     return (
       <div className="app">
