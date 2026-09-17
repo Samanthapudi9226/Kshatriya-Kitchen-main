@@ -1,0 +1,646 @@
+/* =========================================================
+   KSHATRIYA KITCHEN - MOBILE APP
+   Mobile-only UI
+   ========================================================= */
+
+   .kk-mobile-app {
+    min-height: 100vh;
+    background: #f8f7f5;
+    color: #241c18;
+    padding-bottom: 88px;
+    font-family: inherit;
+  }
+  
+  /* =========================
+     HEADER
+     ========================= */
+  
+  .kk-mobile-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: calc(14px + env(safe-area-inset-top)) 18px 14px;
+    background: #ffffff;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  }
+  
+  .kk-location {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+  
+  .kk-location-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: #fff1ec;
+    color: #8c1d18;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 21px;
+    flex-shrink: 0;
+  }
+  
+  .kk-location > div:nth-child(2) {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  
+  .kk-small-label {
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: #8b817b;
+    margin-bottom: 2px;
+  }
+  
+  .kk-location strong {
+    font-size: 14px;
+    color: #261c18;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 180px;
+  }
+  
+  .kk-location-arrow {
+    font-size: 18px;
+    color: #777;
+    margin-left: 2px;
+  }
+  
+  .kk-profile-button {
+    width: 40px;
+    height: 40px;
+    border: 0;
+    border-radius: 50%;
+    background: #f4f1ef;
+    font-size: 20px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  
+  /* =========================
+     SEARCH
+     ========================= */
+  
+  .kk-search-section {
+    padding: 14px 16px 8px;
+    background: #ffffff;
+  }
+  
+  .kk-search-box {
+    height: 50px;
+    border-radius: 13px;
+    background: #f4f3f2;
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    gap: 10px;
+    border: 1px solid transparent;
+    transition: 0.2s ease;
+  }
+  
+  .kk-search-box:focus-within {
+    background: #ffffff;
+    border-color: rgba(140, 29, 24, 0.25);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  }
+  
+  .kk-search-icon {
+    font-size: 25px;
+    color: #716963;
+    line-height: 1;
+  }
+  
+  .kk-search-box input {
+    flex: 1;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    font-size: 14px;
+    color: #241c18;
+    min-width: 0;
+  }
+  
+  .kk-search-box input::placeholder {
+    color: #918983;
+  }
+  
+  .kk-search-clear {
+    border: 0;
+    background: transparent;
+    font-size: 23px;
+    color: #777;
+    cursor: pointer;
+  }
+  
+  /* =========================
+     OFFER BANNER
+     ========================= */
+  
+  .kk-offer-banner {
+    margin: 12px 16px 18px;
+    min-height: 180px;
+    border-radius: 20px;
+    overflow: hidden;
+    position: relative;
+    background:
+      linear-gradient(
+        135deg,
+        #68140f 0%,
+        #8c1d18 55%,
+        #b2381d 100%
+      );
+    box-shadow: 0 10px 28px rgba(100, 25, 15, 0.18);
+  }
+  
+  .kk-offer-content {
+    position: relative;
+    z-index: 2;
+    padding: 22px 20px;
+    color: #ffffff;
+  }
+  
+  .kk-offer-small {
+    display: block;
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 1.5px;
+    opacity: 0.8;
+    margin-bottom: 7px;
+  }
+  
+  .kk-offer-content h2 {
+    margin: 0;
+    font-size: 25px;
+    line-height: 1.08;
+    font-weight: 900;
+    letter-spacing: -0.5px;
+  }
+  
+  .kk-offer-content p {
+    margin: 9px 0 14px;
+    font-size: 12px;
+    opacity: 0.88;
+  }
+  
+  .kk-offer-content button {
+    border: 0;
+    border-radius: 8px;
+    padding: 9px 14px;
+    background: #ffffff;
+    color: #7e1b16;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.4px;
+    cursor: pointer;
+  }
+  
+  .kk-offer-art {
+    position: absolute;
+    right: -15px;
+    bottom: -17px;
+    font-size: 115px;
+    transform: rotate(-8deg);
+    filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.22));
+  }
+  
+  /* =========================
+     SECTION HEADINGS
+     ========================= */
+  
+  .kk-category-section,
+  .kk-menu-section {
+    padding: 0 16px;
+  }
+  
+  .kk-section-heading {
+    margin-bottom: 12px;
+  }
+  
+  .kk-section-heading h3 {
+    margin: 0;
+    font-size: 19px;
+    line-height: 1.2;
+    font-weight: 850;
+    color: #251c18;
+  }
+  
+  .kk-menu-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-top: 22px;
+  }
+  
+  .kk-menu-heading p {
+    margin: 4px 0 0;
+    color: #8c837d;
+    font-size: 11px;
+  }
+  
+  /* =========================
+     CATEGORY SCROLLER
+     ========================= */
+  
+  .kk-category-scroll {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding: 3px 1px 8px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .kk-category-scroll::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .kk-category {
+    border: 0;
+    background: transparent;
+    flex: 0 0 auto;
+    width: 70px;
+    padding: 0;
+    cursor: pointer;
+  }
+  
+  .kk-category-icon {
+    width: 58px;
+    height: 58px;
+    margin: 0 auto 7px;
+    border-radius: 50%;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 27px;
+    box-shadow: 0 3px 13px rgba(0, 0, 0, 0.07);
+    border: 2px solid transparent;
+    transition: 0.2s ease;
+  }
+  
+  .kk-category span {
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    color: #6f6661;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .kk-category.active .kk-category-icon {
+    border-color: #8c1d18;
+    background: #fff1ed;
+    transform: translateY(-2px);
+  }
+  
+  .kk-category.active span {
+    color: #8c1d18;
+    font-weight: 900;
+  }
+  
+  /* =========================
+     FOOD LIST
+     ========================= */
+  
+  .kk-food-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .kk-food-card {
+    background: #ffffff;
+    border-radius: 17px;
+    overflow: hidden;
+    display: flex;
+    min-height: 142px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
+    border: 1px solid rgba(0, 0, 0, 0.035);
+  }
+  
+  .kk-food-image-wrapper {
+    width: 142px;
+    min-width: 142px;
+    position: relative;
+    background: #eee;
+  }
+  
+  .kk-food-image {
+    width: 100%;
+    height: 100%;
+    min-height: 142px;
+    display: block;
+    object-fit: cover;
+  }
+  
+  .kk-food-placeholder {
+    width: 100%;
+    height: 100%;
+    min-height: 142px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 55px;
+    background: #f2ebe5;
+  }
+  
+  .kk-veg-dot {
+    position: absolute;
+    left: 9px;
+    top: 9px;
+    width: 12px;
+    height: 12px;
+    border: 2px solid #ffffff;
+    border-radius: 3px;
+    background: #25852d;
+  }
+  
+  .kk-food-info {
+    padding: 13px 12px;
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .kk-food-top h4 {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.25;
+    font-weight: 850;
+    color: #241c18;
+  }
+  
+  .kk-food-description {
+    margin: 5px 0 0;
+    color: #8b827d;
+    font-size: 10px;
+    line-height: 1.35;
+  
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
+  .kk-food-rating {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 8px;
+    font-size: 10px;
+  }
+  
+  .kk-food-rating > span:first-child {
+    color: #e39b1f;
+    font-size: 12px;
+  }
+  
+  .kk-food-rating strong {
+    font-size: 10px;
+    color: #403833;
+  }
+  
+  .kk-rating-text {
+    color: #99908b;
+    font-size: 9px;
+  }
+  
+  .kk-food-bottom {
+    margin-top: auto;
+    padding-top: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  
+  .kk-price {
+    font-size: 15px;
+    font-weight: 900;
+    color: #251c18;
+  }
+  
+  .kk-add-button {
+    min-width: 62px;
+    height: 32px;
+    padding: 0 12px;
+    border: 1px solid #8c1d18;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #8c1d18;
+    font-size: 11px;
+    font-weight: 900;
+    cursor: pointer;
+    transition: 0.15s ease;
+  }
+  
+  .kk-add-button:active {
+    transform: scale(0.94);
+    background: #fff1ed;
+  }
+  
+  /* =========================
+     EMPTY STATE
+     ========================= */
+  
+  .kk-empty-menu {
+    background: #ffffff;
+    border-radius: 17px;
+    padding: 40px 20px;
+    text-align: center;
+    margin-top: 12px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
+  }
+  
+  .kk-empty-menu > div {
+    font-size: 45px;
+    margin-bottom: 10px;
+  }
+  
+  .kk-empty-menu h3 {
+    margin: 0;
+    font-size: 17px;
+  }
+  
+  .kk-empty-menu p {
+    margin: 6px 0 0;
+    color: #8a817b;
+    font-size: 12px;
+  }
+  
+  /* =========================
+     FLOATING CART
+     ========================= */
+  
+  .kk-floating-cart {
+    position: fixed;
+    left: 14px;
+    right: 14px;
+    bottom: calc(72px + env(safe-area-inset-bottom));
+    z-index: 80;
+    height: 50px;
+    border: 0;
+    border-radius: 13px;
+    background: #8c1d18;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    box-shadow: 0 9px 25px rgba(75, 20, 15, 0.28);
+    cursor: pointer;
+  }
+  
+  .kk-cart-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  
+  .kk-cart-count {
+    width: 23px;
+    height: 23px;
+    border-radius: 50%;
+    background: #ffffff;
+    color: #8c1d18;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 900;
+  }
+  
+  .kk-floating-cart > strong {
+    font-size: 12px;
+  }
+  
+  /* =========================
+     BOTTOM NAV
+     ========================= */
+  
+  .kk-bottom-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: calc(64px + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+    background: rgba(255, 255, 255, 0.97);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-top: 1px solid rgba(0, 0, 0, 0.07);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-around;
+    z-index: 70;
+  }
+  
+  .kk-nav-item {
+    position: relative;
+    width: 25%;
+    height: 64px;
+    border: 0;
+    background: transparent;
+    color: #8b827d;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    cursor: pointer;
+  }
+  
+  .kk-nav-item span {
+    font-size: 20px;
+    line-height: 20px;
+  }
+  
+  .kk-nav-item small {
+    font-size: 9px;
+    font-weight: 700;
+  }
+  
+  .kk-nav-item.active {
+    color: #8c1d18;
+  }
+  
+  .kk-nav-item.active small {
+    font-weight: 900;
+  }
+  
+  .kk-nav-cart b {
+    position: absolute;
+    top: 7px;
+    margin-left: 25px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 9px;
+    background: #8c1d18;
+    color: #ffffff;
+    font-size: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* =========================
+     TOUCH FEEDBACK
+     ========================= */
+  
+  .kk-profile-button:active,
+  .kk-category:active,
+  .kk-floating-cart:active,
+  .kk-nav-item:active {
+    transform: scale(0.96);
+  }
+  
+  /* =========================
+     VERY SMALL PHONES
+     ========================= */
+  
+  @media (max-width: 360px) {
+    .kk-food-image-wrapper {
+      width: 120px;
+      min-width: 120px;
+    }
+  
+    .kk-food-image,
+    .kk-food-placeholder {
+      min-height: 132px;
+    }
+  
+    .kk-food-card {
+      min-height: 132px;
+    }
+  
+    .kk-food-info {
+      padding: 11px 9px;
+    }
+  
+    .kk-food-description {
+      font-size: 9px;
+    }
+  
+    .kk-food-rating {
+      margin-top: 5px;
+    }
+  
+    .kk-offer-content h2 {
+      font-size: 22px;
+    }
+  }
