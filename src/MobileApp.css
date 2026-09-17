@@ -644,3 +644,110 @@
       font-size: 22px;
     }
   }
+  
+/* ==========================================
+   FOOD TYPE INDICATOR
+   ========================================== */
+
+.kk-food-type-dot {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #ffffff;
+  border-radius: 4px;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3;
+}
+
+.kk-food-type-dot span {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: block;
+}
+
+.kk-food-type-dot.veg span {
+  background: #16803c;
+}
+
+.kk-food-type-dot.nonveg span {
+  background: #b3261e;
+}
+
+/* ==========================================
+   SEARCH SUGGESTIONS
+   ========================================== */
+
+.kk-search-section {
+  position: relative;
+  z-index: 20;
+}
+
+.kk-search-suggestions {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  top: calc(100% - 4px);
+  background: #ffffff;
+  border-radius: 0 0 14px 14px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  z-index: 50;
+}
+
+.kk-search-suggestion {
+  width: 100%;
+  border: 0;
+  background: #ffffff;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.kk-search-suggestion:active {
+  transform: scale(0.99);
+}
+
+.kk-suggestion-icon {
+  font-size: 18px;
+}
+
+.kk-search-suggestion span:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.kk-search-suggestion strong {
+  font-size: 14px;
+}
+
+.kk-search-suggestion small {
+  font-size: 11px;
+  opacity: 0.65;
+}
+
+/* ==========================================
+   LOCATION BUTTON
+   ========================================== */
+
+.kk-location {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+}
+
