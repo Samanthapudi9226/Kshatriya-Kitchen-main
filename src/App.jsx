@@ -1422,15 +1422,18 @@ setCustomerProfile(updatedProfile);
       setProfileSetupMode("edit");
       setShowProfileSetup(true);
     }}
-    onLogout={() => {
+    onLogout={async () => {
+      await supabase.auth.signOut();
+    
       setCustomerUser(null);
       setCustomerProfile(null);
       setCustomerOrders([]);
       setShowProfileSetup(false);
-
+    
       setCart([]);
+      localStorage.setItem("kk-cart", "[]");
       setCartOpen(false);
-
+    
       setPage("home");
       setMobilePage("home");
     }}
