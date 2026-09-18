@@ -1,4 +1,8 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  setOptions,
+  importLibrary,
+} from "@googlemaps/js-api-loader";
 import "./MobileApp.css";
 
 export default function MobileApp({
@@ -13,10 +17,81 @@ export default function MobileApp({
   onOrders,
   onProfile,
   onLogin,
-}) {
-  const [search, setSearch] = useState("");
+  onEditProfile,
+  onAddAddress,
+  onLocationSelected,
+  onLogout,
+  onLocation,
+  onHome,
+}) {  const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
+  const [showLocationSheet, setShowLocationSheet] = useState(false);
+  const [locationSearch, setLocationSearch] = useState("");
+  const [placeSuggestions, setPlaceSuggestions] = useState([]);
+const [placesReady, setPlacesReady] = useState(false);
+useEffect(() => {
+  let cancelled = false;
 
+  const loadGooglePlaces = async () => {
+    try {
+      const apiKey =
+        import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+
+      if (!apiKey) {
+        console.error(
+          "Google Maps API key is missing."
+        );
+        return;
+      }
+
+      setOptions({
+        key: apiKey,
+        v: "weekly",
+      });
+
+      await importLibrary("places");
+
+      if (!cancelled) {
+        setPlacesReady(true);
+      }
+    } catch (error) {
+      console.error(
+        "Google Places could not be loaded:",
+        error
+      );
+    }
+  };
+
+  loadGooglePlaces();
+
+  return () => {
+    cancelled = true;
+  };
+}, []);  
+
+const savedLocationsKey = customerUser?.id
+  ? `kk-saved-locations-${customerUser.id}`
+  : null;
+
+const [savedLocations, setSavedLocations] = useState([]);
+
+useEffect(() => {
+  if (!savedLocationsKey) {
+    setSavedLocations([]);
+    return;
+  }
+
+  try {
+    const saved =
+      localStorage.getItem(savedLocationsKey);
+
+    setSavedLocations(
+      saved ? JSON.parse(saved) : []
+    );
+  } catch {
+    setSavedLocations([]);
+  }
+}, [savedLocationsKey]);
   const safeMenu = Array.isArray(menu) ? menu : [];
 
   const getItemName = (item) =>
@@ -44,11 +119,11 @@ export default function MobileApp({
   const getFoodType = (item) => {
     const value = String(
       item?.foodType ??
-      item?.food_type ??
-      item?.diet ??
-      item?.dietType ??
-      item?.isVeg ??
-      ""
+        item?.food_type ??
+        item?.diet ??
+        item?.dietType ??
+        item?.isVeg ??
+        ""
     )
       .trim()
       .toLowerCase();
@@ -75,10 +150,7 @@ export default function MobileApp({
   };
 
   const categories = useMemo(() => {
-    const values = safeMenu
-      .map(getCategory)
-      .filter(Boolean);
-
+    const values = safeMenu.map(getCategory).filter(Boolean);
     return ["All", ...new Set(values)];
   }, [safeMenu]);
 
@@ -93,9 +165,7 @@ export default function MobileApp({
       .filter((item) => {
         const name = getItemName(item).toLowerCase();
         const category = getCategory(item).toLowerCase();
-        const description = String(
-          item?.description || ""
-        ).toLowerCase();
+        const description = String(item?.description || "").toLowerCase();
 
         return (
           name.includes(query) ||
@@ -113,9 +183,7 @@ export default function MobileApp({
       return safeMenu.filter((item) => {
         const name = getItemName(item).toLowerCase();
         const category = getCategory(item).toLowerCase();
-        const description = String(
-          item?.description || ""
-        ).toLowerCase();
+        const description = String(item?.description || "").toLowerCase();
 
         return (
           name.includes(query) ||
@@ -140,187 +208,640 @@ export default function MobileApp({
   );
 
   const locationText =
-    customerProfile?.address || "My Location";
-
-  const handleLocation = () => {
-    if (customerUser && onProfile) {
-      onProfile();
-    } else if (onLogin) {
-      onLogin();
-    }
-  };
+    customerProfile?.address || "Select your location";
 
   const handleHome = () => {
-    setMobilePage("home");
+    if (onHome) {
+      onHome();
+    }
+
     setSearch("");
     setActiveCategory("All");
+
     window.scrollTo({
       top: 0,
       behavior: "smooth",
     });
   };
 
-  const handleSuggestion = (item) => {
-    setSearch(getItemName(item));
+  const handleLocation = () => {
+    setLocationSearch("");
+    setShowLocationSheet(true);
   };
 
+  const handleCurrentLocation = async () => {
+    setShowLocationSheet(false);
 
-if (mobilePage === "orders") {
-  return (
-    <div className="kk-mobile-app">
-      <header className="kk-mobile-header">
-        <div>
-          <span className="kk-small-label">MY ACCOUNT</span>
-          <h2>My Orders</h2>
-        </div>
+    if (onLocation) {
+      await onLocation();
+    }
+  };
 
-        <button
-          type="button"
-          className="kk-profile-button"
-          onClick={onProfile}
-        >
-          👤
-        </button>
-      </header>
+  const handleSuggestion = (item) => { 
+  setSearch(getItemName(item)); 
+}; 
+ 
+const handleLocationSearch = async (event) => { 
+  const value = event.target.value; 
+ 
+  setLocationSearch(value); 
+ 
+  if (!value.trim()) { 
+    setPlaceSuggestions([]); 
+    return; 
+  } 
+ 
+  if (!placesReady) { 
+    return; 
+  } 
+ 
+  try { 
+    const { AutocompleteSuggestion } = 
+      await importLibrary("places"); 
+ 
+    const request = { 
+      input: value.trim(), 
+      includedRegionCodes: ["in"], 
+      language: "en-IN", 
+    }; 
+ 
+    const { suggestions } = 
+      await AutocompleteSuggestion.fetchAutocompleteSuggestions( 
+        request 
+      ); 
+ 
+    const results = (suggestions || []).filter( 
+      (suggestion) => 
+        suggestion?.placePrediction 
+    ); 
+ 
+    setPlaceSuggestions(results); 
+  } catch (error) { 
+    console.error( 
+      "Google Places autocomplete error:", 
+      error 
+    ); 
+ 
+    setPlaceSuggestions([]); 
+  } 
+}; 
+ 
+const handleLocationPlaceSelect = async (suggestion) => { 
+  try { 
+    const prediction = suggestion?.placePrediction; 
+ 
+    if (!prediction) { 
+      return; 
+    } 
+ 
+    const place = prediction.toPlace(); 
+ 
+    await place.fetchFields({ 
+      fields: [ 
+        "displayName", 
+        "formattedAddress", 
+        "location", 
+      ], 
+    }); 
+ 
+    const address = 
+      place.formattedAddress || 
+      place.displayName || 
+      ""; 
+ 
+    const latitude = place.location?.lat(); 
+    const longitude = place.location?.lng(); 
+ 
+    if ( 
+      !address || 
+      !Number.isFinite(latitude) || 
+      !Number.isFinite(longitude) 
+    ) { 
+      console.error( 
+        "Google Place did not return a valid location." 
+      ); 
+      return; 
+    } 
+ 
+    const newLocation = { 
+      label: "Saved Address", 
+      address, 
+      latitude, 
+      longitude, 
+      selected: true, 
+    }; 
+ 
+    const updatedLocations = [ 
+      ...savedLocations.map((location) => ({ 
+        ...location, 
+        selected: false, 
+      })), 
+      newLocation, 
+    ]; 
+ 
+    setSavedLocations(updatedLocations); 
+ 
+    if (savedLocationsKey) {
+  localStorage.setItem(
+    savedLocationsKey,
+    JSON.stringify(updatedLocations)
+  );
+}
+ 
+    if (onLocationSelected) { 
+      await onLocationSelected({ 
+        address, 
+        latitude, 
+        longitude, 
+      }); 
+    } 
+ 
+    setLocationSearch(address); 
+    setPlaceSuggestions([]); 
+    setShowLocationSheet(false); 
+  } catch (error) { 
+    console.error( 
+      "Could not select Google location:", 
+      error 
+    ); 
+  } 
+};
+  const handleAddAddress = () => {
+  setShowLocationSheet(false);
 
-      <section className="kk-menu-section">
-        <div className="kk-empty-menu">
-          <div>📦</div>
-          <h3>My Orders</h3>
-          <p>Your orders will appear here.</p>
-        </div>
-      </section>
+  if (onAddAddress) {
+    onAddAddress();
+  }
+};
+const handleDeleteLocation = (index) => {
+  const locationToDelete = savedLocations[index];
 
-      <nav className="kk-bottom-nav">
-        <button
-          type="button"
-          className="kk-nav-item"
-          onClick={handleHome}
-        >
-          <span>⌂</span>
-          <small>Home</small>
-        </button>
+  const updatedLocations = savedLocations.filter(
+    (_, locationIndex) => locationIndex !== index
+  );
 
-        <button
-          type="button"
-          className="kk-nav-item active"
-        >
-          <span>▣</span>
-          <small>Orders</small>
-        </button>
+  setSavedLocations(updatedLocations);
 
-        <button
-          type="button"
-          className="kk-nav-item kk-nav-cart"
-          onClick={onCart}
-        >
-          <span>🛒</span>
-          <small>Cart</small>
-        </button>
-
-        <button
-          type="button"
-          className="kk-nav-item"
-          onClick={onProfile}
-        >
-          <span>♙</span>
-          <small>Profile</small>
-        </button>
-      </nav>
-    </div>
+  if (savedLocationsKey) {
+  localStorage.setItem(
+    savedLocationsKey,
+    JSON.stringify(updatedLocations)
   );
 }
 
-if (mobilePage === "account") {
-  return (
-    <div className="kk-mobile-app">
-      <header className="kk-mobile-header">
-        <div>
-          <span className="kk-small-label">MY ACCOUNT</span>
-          <h2>Profile</h2>
-        </div>
+  /*
+   * If the deleted address is the currently selected
+   * customer address, select another saved address.
+   */
+  if (
+    locationToDelete?.selected &&
+    updatedLocations.length > 0
+  ) {
+    const nextLocation = {
+      ...updatedLocations[0],
+      selected: true
+    };
 
-        <button
-          type="button"
-          className="kk-profile-button"
-          onClick={onProfile}
-        >
-          👤
-        </button>
-      </header>
+    const finalLocations = updatedLocations.map(
+      (_, locationIndex) => ({
+        ...updatedLocations[locationIndex],
+        selected: locationIndex === 0
+      })
+    );
 
-      <section className="kk-menu-section">
-        <div className="kk-empty-menu">
-          <div>👤</div>
-          <h3>
-            {customerProfile?.name ||
-              customerUser?.email ||
-              "My Profile"}
-          </h3>
-          <p>
-            {customerProfile?.phone ||
-              "Complete your profile to continue."}
-          </p>
-        </div>
-      </section>
+    setSavedLocations(finalLocations);
 
-      <nav className="kk-bottom-nav">
-        <button
-          type="button"
-          className="kk-nav-item"
-          onClick={() => window.location.reload()}
-        >
-          <span>⌂</span>
-          <small>Home</small>
-        </button>
-
-        <button
-          type="button"
-          className="kk-nav-item"
-          onClick={onOrders}
-        >
-          <span>▣</span>
-          <small>Orders</small>
-        </button>
-
-        <button
-          type="button"
-          className="kk-nav-item kk-nav-cart"
-          onClick={onCart}
-        >
-          <span>🛒</span>
-          <small>Cart</small>
-        </button>
-
-        <button
-          type="button"
-          className="kk-nav-item active"
-        >
-          <span>♙</span>
-          <small>Profile</small>
-        </button>
-      </nav>
-    </div>
+    if (savedLocationsKey) {
+  localStorage.setItem(
+    savedLocationsKey,
+    JSON.stringify(finalLocations)
   );
 }
 
+    if (onLocationSelected) {
+      onLocationSelected({
+        address: nextLocation.address,
+        latitude: nextLocation.latitude,
+        longitude: nextLocation.longitude
+      });
+    }
+  }
+};
+  const renderMapPin = () => (
+    <svg
+      viewBox="0 0 24 24"
+      width="21"
+      height="21"
+      aria-hidden="true"
+    >
+      <path
+        d="M12 21s7-6.1 7-12A7 7 0 0 0 5 9c0 5.9 7 12 7 12Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle
+        cx="12"
+        cy="9"
+        r="2.4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.9"
+      />
+    </svg>
+  );
 
+  const renderSearchIcon = () => (
+    <svg
+      viewBox="0 0 24 24"
+      width="20"
+      height="20"
+      aria-hidden="true"
+    >
+      <circle
+        cx="10.8"
+        cy="10.8"
+        r="6.8"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+      <path
+        d="m16 16 4.5 4.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
 
-  return (
-    <div className="kk-mobile-app">
+  const renderNav = () => (
+    <nav className="kk-bottom-nav">
+      <button
+        type="button"
+        className={`kk-nav-item ${
+          mobilePage === "home" ? "active" : ""
+        }`}
+        onClick={handleHome}
+      >
+        <span className="kk-nav-icon">⌂</span>
+        <small>Home</small>
+      </button>
 
+      <button
+        type="button"
+        className={`kk-nav-item ${
+          mobilePage === "orders" ? "active" : ""
+        }`}
+        onClick={onOrders}
+      >
+        <span className="kk-nav-icon">▣</span>
+        <small>Orders</small>
+      </button>
+
+      <button
+        type="button"
+        className="kk-nav-item kk-nav-cart"
+        onClick={onCart}
+      >
+        <span className="kk-nav-icon">🛒</span>
+
+        {cartCount > 0 && <b>{cartCount}</b>}
+
+        <small>Cart</small>
+      </button>
+
+      <button
+        type="button"
+        className={`kk-nav-item ${
+          mobilePage === "account" ? "active" : ""
+        }`}
+        onClick={customerUser ? onProfile : onLogin}
+      >
+        <span className="kk-nav-icon">♙</span>
+        <small>Profile</small>
+      </button>
+    </nav>
+  );
+
+  const renderLocationSheet = () => {
+    if (!showLocationSheet) {
+      return null;
+    }
+
+    return (
+      <div
+        className="kk-location-overlay"
+        onClick={() => setShowLocationSheet(false)}
+      >
+        <div
+          className="kk-location-sheet"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <div className="kk-location-sheet-handle" />
+
+          <div className="kk-location-sheet-header">
+            <div>
+              <span className="kk-small-label">DELIVERY LOCATION</span>
+              <h2>Select a location</h2>
+            </div>
+
+            <button
+              type="button"
+              className="kk-location-close"
+              onClick={() => setShowLocationSheet(false)}
+              aria-label="Close location selector"
+            >
+              ×
+            </button>
+          </div>
+
+       <div className="kk-location-search">
+  <span className="kk-location-search-icon">
+    🔍
+  </span>
+
+  <input
+    type="text"
+    value={locationSearch}
+    onChange={handleLocationSearch}
+    placeholder="Search for area, street name"
+    autoComplete="off"
+  />
+
+  {locationSearch && (
+    <button
+      type="button"
+      className="kk-location-search-clear"
+      onClick={() => {
+        setLocationSearch("");
+        setPlaceSuggestions([]);
+      }}
+      aria-label="Clear location search"
+    >
+      ×
+    </button>
+  )}
+</div>
+
+{locationSearch.trim() && placeSuggestions.length > 0 && (
+  <div className="kk-place-suggestions">
+    {placeSuggestions.map((suggestion, index) => {
+      const prediction = suggestion?.placePrediction;
+
+      return (
+        <button
+          type="button"
+          key={`${prediction?.placeId || "place"}-${index}`}
+          className="kk-place-suggestion"
+          onClick={() =>
+            handleLocationPlaceSelect(suggestion)
+          }
+        >
+          <span className="kk-place-suggestion-icon">
+            {renderMapPin()}
+          </span>
+
+          <span className="kk-place-suggestion-text">
+            <strong>
+              {prediction?.mainText?.text ||
+                prediction?.text?.text ||
+                "Location"}
+            </strong>
+
+            <small>
+              {prediction?.secondaryText?.text || ""}
+            </small>
+          </span>
+        </button>
+      );
+    })}
+  </div>
+)}
+          <button
+            type="button"
+            className="kk-location-action"
+            onClick={handleCurrentLocation}
+          >
+            <span className="kk-location-action-icon current">
+              {renderMapPin()}
+            </span>
+
+            <span>
+              <strong>Use current location</strong>
+              <small>Using your phone's GPS</small>
+            </span>
+
+            <span className="kk-location-action-arrow">›</span>
+          </button>
+
+          <button
+            type="button"
+            className="kk-location-action"
+            onClick={handleAddAddress}
+          >
+            <span className="kk-location-action-icon">
+              +
+            </span>
+
+            <span>
+              <strong>Add Address</strong>
+              <small>Save a delivery address</small>
+            </span>
+
+            <span className="kk-location-action-arrow">›</span>
+          </button>
+
+         <div className="kk-location-group">
+  <div className="kk-location-group-title">
+    SAVED ADDRESSES
+  </div>
+
+  {savedLocations.length > 0 ? (
+    savedLocations.map((location, index) => (
+      <div
+        className="kk-saved-location"
+        key={`${location.address}-${index}`}
+      >
+        <button
+          type="button"
+          className="kk-saved-location-main"
+          onClick={() => {
+  const selectedLocation = {
+    ...location,
+    selected: true,
+  };
+
+  const updatedLocations = savedLocations.map(
+    (savedLocation, locationIndex) => ({
+      ...savedLocation,
+      selected: locationIndex === index,
+    })
+  );
+
+  setSavedLocations(updatedLocations);
+
+  localStorage.setItem(
+    "kk-saved-locations",
+    JSON.stringify(updatedLocations)
+  );
+
+  if (onLocationSelected) {
+    onLocationSelected({
+      address: selectedLocation.address,
+      latitude: selectedLocation.latitude,
+      longitude: selectedLocation.longitude,
+    });
+  }
+
+  setLocationSearch(selectedLocation.address);
+  setShowLocationSheet(false);
+}}
+        >
+          <span className="kk-saved-location-icon">
+            {renderMapPin()}
+          </span>
+
+          <span>
+            <strong>
+              {location.label || "Saved Address"}
+            </strong>
+
+            <small>{location.address}</small>
+          </span>
+
+          {location.selected && (
+            <span className="kk-saved-check">✓</span>
+          )}
+        </button>
+
+        <button
+          type="button"
+          className="kk-saved-location-delete"
+          onClick={() => handleDeleteLocation(index)}
+          aria-label={`Delete ${
+            location.label || "saved address"
+          }`}
+        >
+          🗑️
+        </button>
+      </div>
+    ))
+  ) : customerProfile?.address ? (
+    <div className="kk-saved-location">
+      <button
+        type="button"
+        className="kk-saved-location-main"
+        onClick={() => {
+  if (onLocationSelected && customerProfile?.address) {
+    onLocationSelected({
+      address: customerProfile.address,
+      latitude: customerProfile.latitude,
+      longitude: customerProfile.longitude,
+    });
+  }
+
+  setLocationSearch(customerProfile.address || "");
+  setShowLocationSheet(false);
+}}
+      >
+        <span className="kk-saved-location-icon">
+          {renderMapPin()}
+        </span>
+
+        <span>
+          <strong>Current address</strong>
+          <small>{customerProfile.address}</small>
+        </span>
+
+        <span className="kk-saved-check">✓</span>
+      </button>
+
+      <button
+  type="button"
+  className="kk-saved-location-delete"
+  onClick={() => {
+    setSavedLocations([]);
+    localStorage.removeItem("kk-saved-locations");
+
+    if (onLocationSelected) {
+      onLocationSelected({
+        address: "",
+        latitude: null,
+        longitude: null,
+      });
+    }
+
+    setLocationSearch("");
+  }}
+  aria-label="Delete saved address"
+>
+  🗑️
+</button> 
+</div>
+  ) : ( 
+    <div className="kk-no-location"> 
+      No saved addresses yet 
+    </div> 
+  )} 
+</div>
+          <div className="kk-location-group">
+            <div className="kk-location-group-title">
+              RECENT LOCATIONS
+            </div>
+
+            {customerProfile?.address ? (
+              <button
+                type="button"
+                className="kk-saved-location recent"
+                onClick={() => {
+  if (onLocationSelected && customerProfile?.address) {
+    onLocationSelected({
+      address: customerProfile.address,
+      latitude: customerProfile.latitude,
+      longitude: customerProfile.longitude,
+    });
+  }
+
+  setLocationSearch(customerProfile.address || "");
+  setShowLocationSheet(false);
+}}
+              >
+                <span className="kk-saved-location-icon">◷</span>
+
+                <span>
+                  <strong>Recent location</strong>
+                  <small>{customerProfile.address}</small>
+                </span>
+              </button>
+            ) : (
+              <div className="kk-no-location">
+                Your recent locations will appear here
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderHome = () => (
+    <>
       <header className="kk-mobile-header">
         <button
           type="button"
           className="kk-location"
           onClick={handleLocation}
         >
-          <div className="kk-location-icon">⌖</div>
+          <div className="kk-location-icon">
+            {renderMapPin()}
+          </div>
 
           <div>
-            <span className="kk-small-label">
-              DELIVER TO
-            </span>
+            <span className="kk-small-label">DELIVER TO</span>
 
             <strong>{locationText}</strong>
           </div>
@@ -340,15 +861,15 @@ if (mobilePage === "account") {
 
       <section className="kk-search-section">
         <div className="kk-search-box">
-          <span className="kk-search-icon">⌕</span>
+          <span className="kk-search-icon">
+            {renderSearchIcon()}
+          </span>
 
           <input
             type="text"
             placeholder="Search for biryani, pulav..."
             value={search}
-            onChange={(event) =>
-              setSearch(event.target.value)
-            }
+            onChange={(event) => setSearch(event.target.value)}
           />
 
           {search && (
@@ -398,12 +919,10 @@ if (mobilePage === "account") {
           <h2>
             Authentic Biryani
             <br />
-            & Pulavs
+            &amp; Pulavs
           </h2>
 
-          <p>
-            Freshly prepared. Rich in flavour.
-          </p>
+          <p>Freshly prepared. Rich in flavour.</p>
 
           <button
             type="button"
@@ -479,9 +998,7 @@ if (mobilePage === "account") {
 
             <h3>No dishes found</h3>
 
-            <p>
-              Try another search or category.
-            </p>
+            <p>Try another search or category.</p>
           </div>
         ) : (
           <div className="kk-food-list">
@@ -583,9 +1100,7 @@ if (mobilePage === "account") {
           onClick={onCart}
         >
           <div className="kk-cart-left">
-            <span className="kk-cart-count">
-              {cartCount}
-            </span>
+            <span className="kk-cart-count">{cartCount}</span>
 
             <span>
               {cartCount === 1 ? "item" : "items"} added
@@ -595,48 +1110,167 @@ if (mobilePage === "account") {
           <strong>View Cart →</strong>
         </button>
       )}
+    </>
+  );
 
-      <nav className="kk-bottom-nav">
-        <button
-          type="button"
-          className="kk-nav-item active"
-          onClick={handleHome}
-        >
-          <span>⌂</span>
-          <small>Home</small>
-        </button>
-
-        <button
-          type="button"
-          className="kk-nav-item"
-          onClick={onOrders}
-        >
-          <span>▣</span>
-          <small>Orders</small>
-        </button>
+  const renderOrders = () => (
+    <div className="kk-mobile-page">
+      <header className="kk-mobile-inner-header">
+        <div>
+          <span className="kk-small-label">MY ACCOUNT</span>
+          <h2>My Orders</h2>
+        </div>
 
         <button
           type="button"
-          className="kk-nav-item kk-nav-cart"
-          onClick={onCart}
-        >
-          <span>🛒</span>
-
-          {cartCount > 0 && <b>{cartCount}</b>}
-
-          <small>Cart</small>
-        </button>
-
-        <button
-          type="button"
-          className="kk-nav-item"
+          className="kk-profile-button"
           onClick={customerUser ? onProfile : onLogin}
         >
-          <span>♙</span>
-          <small>Profile</small>
+          👤
         </button>
-      </nav>
+      </header>
 
+      <section className="kk-menu-section">
+        <div className="kk-empty-menu">
+          <div>📦</div>
+          <h3>My Orders</h3>
+          <p>Your orders will appear here.</p>
+        </div>
+      </section>
     </div>
   );
+
+  const renderAccount = () => (
+    <div className="kk-mobile-page">
+      <header className="kk-mobile-inner-header">
+        <div>
+          <span className="kk-small-label">MY ACCOUNT</span>
+          <h2>Profile</h2>
+        </div>
+
+        <button
+          type="button"
+          className="kk-profile-button"
+          onClick={onProfile}
+        >
+          👤
+        </button>
+      </header>
+
+      <section className="kk-profile-section">
+        <div className="kk-profile-card">
+          <div className="kk-profile-avatar">👤</div>
+
+          <div className="kk-profile-main">
+            <h3>
+              {customerProfile?.name ||
+                customerUser?.email ||
+                "My Profile"}
+            </h3>
+
+            {customerProfile?.phone && (
+              <p>{customerProfile.phone}</p>
+            )}
+
+            {customerUser?.email && (
+              <p>{customerUser.email}</p>
+            )}
+          </div>
+        </div>
+
+        <div className="kk-profile-options">
+          <button
+            type="button"
+            className="kk-profile-option"
+            onClick={onEditProfile}
+          >
+            <span className="kk-profile-option-icon">✏️</span>
+
+            <span>
+              <strong>Edit Profile</strong>
+              <small>Update your personal details</small>
+            </span>
+
+            <b>›</b>
+          </button>
+
+          <button
+            type="button"
+            className="kk-profile-option"
+            onClick={handleLocation}
+          >
+            <span className="kk-profile-option-icon">
+              {renderMapPin()}
+            </span>
+
+            <span>
+              <strong>Delivery Location</strong>
+              <small>
+                {customerProfile?.address ||
+                  "Select your delivery location"}
+              </small>
+            </span>
+
+            <b>›</b>
+          </button>
+
+          <button
+            type="button"
+            className="kk-profile-option"
+            onClick={onOrders}
+          >
+            <span className="kk-profile-option-icon">▣</span>
+
+            <span>
+              <strong>My Orders</strong>
+              <small>View your previous orders</small>
+            </span>
+
+            <b>›</b>
+          </button>
+
+          <button
+            type="button"
+            className="kk-profile-option logout"
+            onClick={onLogout}
+          >
+            <span className="kk-profile-option-icon">↪</span>
+
+            <span>
+              <strong>Logout</strong>
+              <small>Sign out of your account</small>
+            </span>
+
+            <b>›</b>
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+
+  let pageContent;
+
+  if (mobilePage === "orders") {
+    pageContent = renderOrders();
+  } else if (mobilePage === "account") {
+    pageContent = renderAccount();
+  } else {
+    pageContent = renderHome();
+  }
+
+  return (
+    <div className="kk-mobile-app">
+      <main
+        key={mobilePage}
+        className="kk-mobile-page-transition"
+      >
+        {pageContent}
+      </main>
+
+      {renderNav()}
+
+      {renderLocationSheet()}
+    </div>
+   );
 }
+
