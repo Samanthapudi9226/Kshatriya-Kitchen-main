@@ -267,19 +267,50 @@ function App() {
 
   useEffect(() => {
     let cancelled = false;
-
+  
     async function loadMenu() {
-      const remoteMenu = await loadMenuFromSupabase();
-
+      const remoteMenu =
+        await loadMenuFromSupabase();
+  
       if (!cancelled && remoteMenu) {
         setMenu(remoteMenu);
       }
     }
-
+  
     loadMenu();
-
+  
+    if (!supabase) {
+      return () => {
+        cancelled = true;
+      };
+    }
+  
+    const menuChannel = supabase
+      .channel('menu-items-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'menu_items',
+        },
+        async () => {
+          const remoteMenu =
+            await loadMenuFromSupabase();
+  
+          if (!cancelled && remoteMenu) {
+            setMenu(remoteMenu);
+          }
+        }
+      )
+      .subscribe();
+  
     return () => {
       cancelled = true;
+  
+      supabase.removeChannel(
+        menuChannel
+      );
     };
   }, []);
 
@@ -2080,16 +2111,23 @@ function Admin({
     );
   }
 
-  function updateItem(id, field, value) {
-    setMenu(
-      menu.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              [field]: field === 'price' ? Number(value) : value,
-            }
-          : item
-      )
+  async function updateItem(id, field, value) {
+    const updatedMenu = menu.map((item) =>
+      item.id === id
+        ? {
+            ...item,
+            [field]:
+              field === 'price'
+                ? Number(value)
+                : value,
+          }
+        : item
+    );
+  
+    setMenu(updatedMenu);
+  
+    await saveMenuToSupabase(
+      updatedMenu
     );
   }
 
