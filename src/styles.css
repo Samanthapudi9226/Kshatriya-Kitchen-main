@@ -2994,3 +2994,123 @@ textarea { min-height: 90px; resize: vertical; }
   object-fit: cover;
   border-radius: 12px;
 }
+/* =========================================
+   ADMIN MENU MANAGEMENT - OLD COMPACT STYLE
+========================================= */
+
+.admin-menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.admin-menu-item {
+  display: grid !important;
+  grid-template-columns:
+    100px
+    minmax(160px, 1fr)
+    minmax(180px, 1fr)
+    110px;
+  gap: 18px;
+  align-items: center;
+
+  background: #fff;
+  padding: 18px;
+  border-radius: 0;
+}
+
+/* Item image */
+.admin-menu-item > img {
+  width: 96px !important;
+  height: 96px !important;
+  min-width: 96px !important;
+  object-fit: cover;
+  border-radius: 0 !important;
+}
+
+/* Put all fields in one horizontal row */
+.admin-menu-fields {
+  grid-column: 2 / 4;
+
+  display: grid !important;
+  grid-template-columns:
+    minmax(180px, 1fr)
+    minmax(180px, 1fr)
+    minmax(150px, 1fr)
+    minmax(120px, 1fr)
+    minmax(180px, 1fr);
+
+  gap: 10px;
+  align-items: center;
+}
+
+/* Hide labels visually, keep only inputs */
+.admin-menu-fields label {
+  display: block;
+  font-size: 0 !important;
+  margin: 0 !important;
+}
+
+/* All inputs same compact size */
+.admin-menu-fields input,
+.admin-menu-fields textarea {
+  width: 100% !important;
+  height: 52px !important;
+  min-height: 52px !important;
+
+  box-sizing: border-box;
+  margin: 0 !important;
+  padding: 0 14px !important;
+
+  font-size: 14px !important;
+  font-family: inherit;
+
+  resize: none;
+  overflow: hidden;
+}
+
+/* Description should behave like normal one-line field */
+.admin-menu-fields textarea {
+  line-height: 52px;
+  white-space: nowrap;
+}
+
+/* Availability + delete/actions on right */
+.admin-menu-actions {
+  grid-column: 4;
+  display: flex !important;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.admin-menu-actions .availability {
+  min-height: 40px;
+  margin: 0 !important;
+}
+
+.admin-menu-actions .gold-button {
+  min-height: 40px;
+  margin: 0 !important;
+}
+
+.admin-menu-actions .danger-button {
+  min-height: 40px;
+  margin: 0 !important;
+}
+
+/* Prevent giant controls */
+.admin-menu-item button {
+  width: auto;
+}
+
+/* Desktop horizontal menu needs room */
+@media (min-width: 1100px) {
+  .admin-main {
+    overflow-x: auto;
+  }
+
+  .admin-menu-list {
+    min-width: 1200px;
+  }
+}
