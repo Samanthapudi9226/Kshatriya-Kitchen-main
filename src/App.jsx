@@ -197,6 +197,51 @@ async function loadCustomerOrders(userId) {
   }));
 }
 
+async function loadRawMaterialsFromSupabase() {
+  if (!supabase) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from('raw_materials')
+    .select('*')
+    .order('created_at', {
+      ascending: true,
+    });
+
+  if (error) {
+    console.error('Could not load raw materials:', error);
+
+    return [];
+  }
+
+  return data || [];
+}
+
+async function loadRawMaterialPurchases() {
+  if (!supabase) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from('raw_material_purchases')
+    .select('*')
+    .order('purchase_date', {
+      ascending: false,
+    })
+    .order('created_at', {
+      ascending: false,
+    });
+
+  if (error) {
+    console.error('Could not load raw material purchases:', error);
+
+    return [];
+  }
+
+  return data || [];
+}
+
 async function saveMenuToSupabase(menuItems) {
   if (!supabase) {
     return;
@@ -2164,11 +2209,76 @@ function Admin({
   const [loginLoading, setLoginLoading] = useState(false);
 
   const [tab, setTab] = useState('dashboard');
+
   const [soundEnabled, setSoundEnabled] = useState(false);
+
+  /*
+   * RAW MATERIAL MANAGEMENT
+   */
+
+  const [rawMaterials, setRawMaterials] = useState([]);
+
+  const [rawMaterialPurchases, setRawMaterialPurchases] = useState([]);
+
+  const [rawMaterialName, setRawMaterialName] = useState('');
+
+  const [rawMaterialUnit, setRawMaterialUnit] = useState('kg');
+
+  const [purchaseMaterialId, setPurchaseMaterialId] = useState('');
+
+  const [purchaseQuantity, setPurchaseQuantity] = useState('');
+
+  const [purchasePrice, setPurchasePrice] = useState('');
+
+  const [purchaseDate, setPurchaseDate] = useState(() => {
+    const today = new Date();
+
+    const year = today.getFullYear();
+
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+
+    const day = String(today.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+  });
+
+  const [purchaseSupplier, setPurchaseSupplier] = useState('');
 
   const knownOrderIdsRef = useRef(new Set());
 
   const soundEnabledRef = useRef(false);
+
+  /*
+   * LOAD RAW MATERIAL INVENTORY
+   * AND PURCHASE HISTORY
+   */
+  useEffect(() => {
+    if (!loggedIn || !supabase) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadRawInventory() {
+      const materials = await loadRawMaterialsFromSupabase();
+
+      const purchases = await loadRawMaterialPurchases();
+
+      if (cancelled) {
+        return;
+      }
+
+      setRawMaterials(materials);
+
+      setRawMaterialPurchases(purchases);
+    }
+
+    loadRawInventory();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [loggedIn]);
 
   function playNewOrderSound() {
     try {
@@ -2329,6 +2439,454 @@ function Admin({
       </div>
     );
   }
+
+  /*
+   * RAW MATERIALS
+   */
+
+  async function refreshRawMaterials() {
+    const materials = await loadRawMaterialsFromSupabase();
+
+    const purchases = await loadRawMaterialPurchases();
+
+    setRawMaterials(materials);
+
+    setRawMaterialPurchases(purchases);
+  }
+
+  async function addRawMaterial() {
+    const name = rawMaterialName.trim();
+
+    if (!name) {
+      alert('Please enter raw material name.');
+
+      return;
+    }
+
+    if (!supabase) {
+      alert('Supabase is not configured.');
+
+      return;
+    }
+
+    const material = {
+      id: `raw-${Date.now()}`,
+
+      name,
+
+      unit: rawMaterialUnit,
+
+      current_stock: 0,
+
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error } = await supabase.from('raw_materials').insert(material);
+
+    if (error) {
+      console.error('Could not add raw material:', error);
+
+      alert('Could not add raw material.');
+
+      return;
+    }
+
+    setRawMaterialName('');
+
+    setRawMaterialUnit('kg');
+
+    await refreshRawMaterials();
+  }
+
+  async function deleteRawMaterial(material) {
+    const confirmed = window.confirm(`Delete ${material.name}?`);
+
+    if (!confirmed) {
+      return;
+    }
+
+    const { error } = await supabase
+      .from('raw_materials')
+      .delete()
+      .eq('id', material.id);
+
+    if (error) {
+      console.error('Could not delete raw material:', error);
+
+      alert('Could not delete raw material.');
+
+      return;
+    }
+
+    if (purchaseMaterialId === material.id) {
+      setPurchaseMaterialId('');
+    }
+
+    await refreshRawMaterials();
+  }
+
+  async function updateRawMaterialStock(material, value) {
+    const safeStock = Math.max(0, Number(value) || 0);
+
+    setRawMaterials((current) =>
+      current.map((entry) =>
+        entry.id === material.id
+          ? {
+              ...entry,
+              current_stock: safeStock,
+            }
+          : entry
+      )
+    );
+  }
+
+  async function saveRawMaterialStock(material) {
+    const currentMaterial = rawMaterials.find(
+      (entry) => entry.id === material.id
+    );
+
+    if (!currentMaterial) {
+      return;
+    }
+
+    const safeStock = Math.max(0, Number(currentMaterial.current_stock) || 0);
+
+    const { error } = await supabase
+      .from('raw_materials')
+      .update({
+        current_stock: safeStock,
+
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', material.id);
+
+    if (error) {
+      console.error('Could not update raw material stock:', error);
+
+      alert('Could not update stock.');
+
+      return;
+    }
+
+    await refreshRawMaterials();
+  }
+
+  async function addRawMaterialPurchase() {
+    if (!purchaseMaterialId) {
+      alert('Please select a raw material.');
+
+      return;
+    }
+
+    const material = rawMaterials.find(
+      (entry) => entry.id === purchaseMaterialId
+    );
+
+    if (!material) {
+      alert('Raw material not found.');
+
+      return;
+    }
+
+    const quantity = Math.max(0, Number(purchaseQuantity) || 0);
+
+    const pricePerUnit = Math.max(0, Number(purchasePrice) || 0);
+
+    if (quantity <= 0) {
+      alert('Please enter purchase quantity.');
+
+      return;
+    }
+
+    if (pricePerUnit <= 0) {
+      alert('Please enter price per unit.');
+
+      return;
+    }
+
+    const totalAmount = quantity * pricePerUnit;
+
+    const purchase = {
+      id: `purchase-${Date.now()}`,
+
+      material_id: material.id,
+
+      material_name: material.name,
+
+      quantity,
+
+      unit: material.unit,
+
+      price_per_unit: pricePerUnit,
+
+      total_amount: totalAmount,
+
+      purchase_date: purchaseDate,
+
+      supplier: purchaseSupplier.trim() || null,
+    };
+
+    const { error } = await supabase
+      .from('raw_material_purchases')
+      .insert(purchase);
+
+    if (error) {
+      console.error('Could not save purchase:', error);
+
+      alert('Could not save purchase.');
+
+      return;
+    }
+
+    /*
+     * Purchase is recorded as an expense.
+     *
+     * Current physical stock is NOT
+     * automatically changed.
+     *
+     * Admin updates actual remaining
+     * stock manually.
+     */
+
+    setPurchaseQuantity('');
+
+    setPurchasePrice('');
+
+    setPurchaseSupplier('');
+
+    await refreshRawMaterials();
+  }
+
+  /*
+   * RAW MATERIAL MANAGEMENT
+   */
+
+  async function refreshRawMaterials() {
+    const materials = await loadRawMaterialsFromSupabase();
+
+    const purchases = await loadRawMaterialPurchases();
+
+    setRawMaterials(materials);
+
+    setRawMaterialPurchases(purchases);
+  }
+
+  async function addRawMaterial() {
+    const name = rawMaterialName.trim();
+
+    if (!name) {
+      alert('Please enter raw material name.');
+
+      return;
+    }
+
+    if (!supabase) {
+      alert('Supabase is not configured.');
+
+      return;
+    }
+
+    const material = {
+      id: `raw-${Date.now()}`,
+
+      name,
+
+      unit: rawMaterialUnit,
+
+      current_stock: 0,
+
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error } = await supabase.from('raw_materials').insert(material);
+
+    if (error) {
+      console.error('Could not add raw material:', error);
+
+      alert('Could not add raw material.');
+
+      return;
+    }
+
+    setRawMaterialName('');
+
+    setRawMaterialUnit('kg');
+
+    await refreshRawMaterials();
+  }
+
+  async function deleteRawMaterial(material) {
+    if (!supabase) {
+      return;
+    }
+
+    const confirmed = window.confirm(`Delete ${material.name}?`);
+
+    if (!confirmed) {
+      return;
+    }
+
+    const { error } = await supabase
+      .from('raw_materials')
+      .delete()
+      .eq('id', material.id);
+
+    if (error) {
+      console.error('Could not delete raw material:', error);
+
+      alert('Could not delete raw material.');
+
+      return;
+    }
+
+    if (purchaseMaterialId === material.id) {
+      setPurchaseMaterialId('');
+    }
+
+    await refreshRawMaterials();
+  }
+
+  function updateRawMaterialStock(material, value) {
+    const safeStock = Math.max(0, Number(value) || 0);
+
+    setRawMaterials((current) =>
+      current.map((entry) =>
+        entry.id === material.id
+          ? {
+              ...entry,
+
+              current_stock: safeStock,
+            }
+          : entry
+      )
+    );
+  }
+
+  async function saveRawMaterialStock(material) {
+    if (!supabase) {
+      return;
+    }
+
+    const currentMaterial = rawMaterials.find(
+      (entry) => entry.id === material.id
+    );
+
+    if (!currentMaterial) {
+      return;
+    }
+
+    const safeStock = Math.max(0, Number(currentMaterial.current_stock) || 0);
+
+    const { error } = await supabase
+      .from('raw_materials')
+      .update({
+        current_stock: safeStock,
+
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', material.id);
+
+    if (error) {
+      console.error('Could not update raw material stock:', error);
+
+      alert('Could not update stock.');
+
+      return;
+    }
+
+    await refreshRawMaterials();
+  }
+
+  async function addRawMaterialPurchase() {
+    if (!supabase) {
+      alert('Supabase is not configured.');
+
+      return;
+    }
+
+    if (!purchaseMaterialId) {
+      alert('Please select a raw material.');
+
+      return;
+    }
+
+    const material = rawMaterials.find(
+      (entry) => entry.id === purchaseMaterialId
+    );
+
+    if (!material) {
+      alert('Raw material not found.');
+
+      return;
+    }
+
+    const quantity = Math.max(0, Number(purchaseQuantity) || 0);
+
+    const pricePerUnit = Math.max(0, Number(purchasePrice) || 0);
+
+    if (quantity <= 0) {
+      alert('Please enter purchase quantity.');
+
+      return;
+    }
+
+    if (pricePerUnit <= 0) {
+      alert('Please enter price per unit.');
+
+      return;
+    }
+
+    const totalAmount = quantity * pricePerUnit;
+
+    const purchase = {
+      id: `purchase-${Date.now()}`,
+
+      material_id: material.id,
+
+      material_name: material.name,
+
+      quantity,
+
+      unit: material.unit,
+
+      price_per_unit: pricePerUnit,
+
+      total_amount: totalAmount,
+
+      purchase_date: purchaseDate,
+
+      supplier: purchaseSupplier.trim() || null,
+    };
+
+    const { error } = await supabase
+      .from('raw_material_purchases')
+      .insert(purchase);
+
+    if (error) {
+      console.error('Could not save purchase:', error);
+
+      alert('Could not save purchase.');
+
+      return;
+    }
+
+    /*
+     * Purchase is saved as an expense.
+     * Physical stock stays manual.
+     */
+
+    setPurchaseQuantity('');
+
+    setPurchasePrice('');
+
+    setPurchaseSupplier('');
+
+    await refreshRawMaterials();
+  }
+
+  /*
+   * EXISTING FINISHED FOOD STOCK
+   */
 
   async function updateStock(id, totalStock) {
     const safeTotal = Math.max(0, Number(totalStock) || 0);
