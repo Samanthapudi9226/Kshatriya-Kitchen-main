@@ -1,0 +1,1674 @@
+@import url("https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500;6..96,600&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500;1,600&display=swap");
+
+
+/* =====================================================
+   MAIN
+===================================================== */
+
+.royal-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  overflow: hidden;
+
+  background:
+    radial-gradient(
+      ellipse at 50% 42%,
+      #2b1b0e 0%,
+      #17100b 26%,
+      #0d0a08 52%,
+      #070605 76%,
+      #030303 100%
+    );
+
+  isolation: isolate;
+}
+
+
+/* =====================================================
+   BACKGROUND
+===================================================== */
+
+.royal-bg-glow {
+  position: absolute;
+
+  border-radius: 50%;
+
+  pointer-events: none;
+
+  filter: blur(70px);
+}
+
+
+.royal-bg-glow-one {
+  width: 430px;
+  height: 430px;
+
+  top: 36%;
+  left: 50%;
+
+  background:
+    radial-gradient(
+      circle,
+      rgba(218, 167, 75, .20),
+      rgba(138, 74, 24, .08) 45%,
+      transparent 72%
+    );
+
+  transform: translate(-50%, -50%);
+
+  animation:
+    backgroundBreath 6s ease-in-out forwards;
+}
+
+
+.royal-bg-glow-two {
+  width: 360px;
+  height: 250px;
+
+  left: 50%;
+  bottom: -70px;
+
+  background:
+    rgba(111, 38, 21, .13);
+
+  transform: translateX(-50%);
+
+  animation:
+    bottomGlow 6s ease-in-out forwards;
+}
+
+
+.royal-vignette {
+  position: absolute;
+  inset: 0;
+
+  pointer-events: none;
+
+  box-shadow:
+    inset 0 0 90px rgba(0, 0, 0, .75),
+    inset 0 0 180px rgba(0, 0, 0, .48);
+}
+
+
+.royal-texture {
+  position: absolute;
+  inset: 0;
+
+  pointer-events: none;
+
+  opacity: .05;
+
+  background-image:
+    repeating-radial-gradient(
+      circle at 30% 20%,
+      rgba(255,255,255,.55) 0,
+      rgba(255,255,255,.55) .35px,
+      transparent .7px,
+      transparent 5px
+    );
+
+  mix-blend-mode: soft-light;
+}
+
+
+/* =====================================================
+   PARTICLES
+===================================================== */
+
+.royal-particles {
+  position: absolute;
+  inset: 0;
+
+  pointer-events: none;
+}
+
+
+.particle {
+  position: absolute;
+
+  width: 2px;
+  height: 2px;
+
+  border-radius: 50%;
+
+  background: #e0b25d;
+
+  box-shadow:
+    0 0 8px rgba(224,178,93,.65);
+
+  opacity: 0;
+
+  animation:
+    particleFloat 4.5s ease-in-out infinite;
+}
+
+
+.p1 {
+  left: 15%;
+  top: 68%;
+  animation-delay: .4s;
+}
+
+.p2 {
+  left: 26%;
+  top: 32%;
+  animation-delay: 1s;
+}
+
+.p3 {
+  right: 18%;
+  top: 65%;
+  animation-delay: .7s;
+}
+
+.p4 {
+  right: 28%;
+  top: 29%;
+  animation-delay: 1.5s;
+}
+
+.p5 {
+  left: 44%;
+  top: 20%;
+  animation-delay: 2s;
+}
+
+.p6 {
+  right: 42%;
+  bottom: 18%;
+  animation-delay: 1.2s;
+}
+
+
+/* =====================================================
+   FOOD LINE ART
+===================================================== */
+
+.food-art {
+  position: absolute;
+
+  width: 115px;
+  height: 115px;
+
+  color: #bc8b43;
+
+  opacity: 0;
+
+  filter:
+    drop-shadow(
+      0 0 8px rgba(196,145,65,.12)
+    );
+
+  pointer-events: none;
+}
+
+
+.food-art svg {
+  width: 100%;
+  height: 100%;
+}
+
+
+.food-art path,
+.food-art circle {
+  fill: none;
+
+  stroke: currentColor;
+  stroke-width: 1.15;
+
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+
+.food-art-left {
+  left: -15px;
+  top: 55%;
+
+  transform:
+    translateY(-50%)
+    rotate(-8deg);
+
+  animation:
+    leftFoodReveal 6s ease forwards;
+}
+
+
+.food-art-right {
+  right: -10px;
+  top: 52%;
+
+  transform:
+    translateY(-50%)
+    rotate(8deg);
+
+  animation:
+    rightFoodReveal 6s ease forwards;
+}
+
+
+/* =====================================================
+   MAIN STAGE
+===================================================== */
+
+.royal-stage {
+  position: relative;
+
+  width: 100%;
+  height: 390px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+/* =====================================================
+   HANDI
+===================================================== */
+
+.handi-art {
+  position: absolute;
+
+  top: 45%;
+  left: 50%;
+
+  width: 180px;
+
+  color: #b88640;
+
+  opacity: 0;
+
+  transform:
+    translate(-50%, -50%)
+    scale(.9);
+
+  animation:
+    handiReveal 6s ease forwards;
+}
+
+
+.handi-art svg {
+  width: 100%;
+}
+
+
+.handi-art path {
+  fill: none;
+
+  stroke: currentColor;
+  stroke-width: 1;
+
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+
+/* =====================================================
+   STEAM
+===================================================== */
+
+.steam-stage {
+  position: absolute;
+
+  width: 150px;
+  height: 120px;
+
+  left: 50%;
+  top: 22%;
+
+  transform: translateX(-50%);
+
+  opacity: 0;
+
+  animation:
+    steamContainer 6s ease forwards;
+}
+
+
+.steam {
+  position: absolute;
+
+  bottom: 0;
+
+  width: 28px;
+  height: 95px;
+
+  border-radius: 50%;
+
+  border-left:
+    1px solid rgba(220,183,113,.32);
+
+  filter: blur(.3px);
+
+  opacity: 0;
+}
+
+
+.steam-one {
+  left: 32px;
+
+  animation:
+    steamRise 2.5s .6s ease-in-out infinite;
+}
+
+
+.steam-two {
+  left: 67px;
+
+  height: 110px;
+
+  animation:
+    steamRise 2.8s .25s ease-in-out infinite;
+}
+
+
+.steam-three {
+  left: 103px;
+
+  height: 82px;
+
+  animation:
+    steamRise 2.3s .9s ease-in-out infinite;
+}
+
+
+/* =====================================================
+   INTERLOCKED SS
+===================================================== */
+
+.royal-monogram {
+  position: absolute;
+
+  top: 43%;
+  left: 50%;
+
+  width: 190px;
+  height: 175px;
+
+  overflow: visible;
+
+  transform:
+    translate(-50%, -50%);
+
+  animation:
+    monogramContainer
+    4.25s
+    cubic-bezier(.22,.72,.22,1)
+    forwards;
+}
+
+.royal-s {
+  position: absolute;
+
+  top: 50%;
+
+  display: block;
+
+  width: 120px;
+  height: 155px;
+
+  overflow: visible;
+
+  padding:
+    10px 14px 14px 10px;
+
+  box-sizing: content-box;
+
+  font-family:
+    "Bodoni Moda",
+    "Cormorant Garamond",
+    Georgia,
+    serif;
+
+  font-size: 132px;
+
+  font-weight: 500;
+  font-style: italic;
+
+  line-height: 1;
+  background:
+    linear-gradient(
+      115deg,
+      #76501d 0%,
+      #b67d2e 18%,
+      #e0b65d 36%,
+      #fff0ad 50%,
+      #d7a247 65%,
+      #986522 82%,
+      #6f491b 100%
+    );
+
+  background-size: 230% 100%;
+
+  -webkit-background-clip: text;
+  background-clip: text;
+
+  -webkit-text-fill-color: transparent;
+
+  filter:
+    drop-shadow(
+      0 8px 10px rgba(0,0,0,.55)
+    )
+    drop-shadow(
+      0 0 7px rgba(219,167,71,.15)
+    );
+
+  opacity: 0;
+}
+
+
+.royal-s-left {
+  left: 9px;
+
+  z-index: 2;
+
+  animation:
+    leftRoyalS
+    4.15s
+    cubic-bezier(.16,.78,.25,1)
+    forwards;
+}
+
+
+.royal-s-right {
+  right: 5px;
+
+  z-index: 1;
+
+  animation:
+    rightRoyalS
+    4.15s
+    cubic-bezier(.16,.78,.25,1)
+    forwards;
+}
+
+
+/* metallic shine over SS */
+
+.monogram-shine {
+  position: absolute;
+
+  top: 5%;
+  left: -40%;
+
+  width: 25px;
+  height: 90%;
+
+  opacity: 0;
+
+  transform:
+    rotate(15deg);
+
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      rgba(255,244,196,.45),
+      transparent
+    );
+
+  filter: blur(3px);
+
+  animation:
+    monogramShine
+    1.1s
+    1.25s
+    ease-out
+    forwards;
+}
+
+
+/* =====================================================
+   FINAL BRAND
+===================================================== */
+
+.royal-final {
+  position: absolute;
+
+  left: 50%;
+  top: 48%;
+
+  width: 100%;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  transform:
+    translate(-50%, -50%);
+}
+
+
+/* =====================================================
+   WORDMARK
+===================================================== */
+
+.royal-wordmark {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+
+  width: 100%;
+  min-height: 85px;
+
+  padding: 8px 16px;
+
+  box-sizing: border-box;
+
+  overflow: visible;
+
+  white-space: nowrap;
+  opacity: 0;
+
+  filter: blur(10px);
+
+  transform:
+    translateY(14px)
+    scale(.96);
+
+  animation:
+    wordmarkReveal
+    1.25s
+    3.05s
+    cubic-bezier(.16,.82,.25,1)
+    forwards;
+}
+
+
+.word-kshatriya {
+  font-family:
+    "Bodoni Moda",
+    Didot,
+    Georgia,
+    serif;
+
+  font-size:
+    clamp(38px, 10vw, 54px);
+
+  font-weight: 500;
+
+  letter-spacing: -1px;
+
+  color: #f8eedc;
+
+  text-shadow:
+    0 3px 18px rgba(0,0,0,.45);
+}
+
+
+.word-brand-s {
+  display: inline-block;
+
+  position: relative;
+
+  margin-left: 2px;
+  margin-right: 4px;
+
+  padding:
+    4px 6px 7px 3px;
+
+  overflow: visible;
+
+  font-family:
+    "Bodoni Moda",
+    "Cormorant Garamond",
+    Georgia,
+    serif;
+
+  font-size:
+    clamp(48px, 12vw, 64px);
+
+  font-weight: 500;
+  font-style: italic;
+
+  line-height: 1;
+
+  vertical-align: baseline;
+
+  color: #e4b65c;
+
+  background:
+    linear-gradient(
+      110deg,
+      #9b6a27 0%,
+      #d9a84c 28%,
+      #fff0ad 50%,
+      #d3a047 70%,
+      #8a5b20 100%
+    );
+
+  -webkit-background-clip: text;
+  background-clip: text;
+
+  -webkit-text-fill-color: transparent;
+
+  filter:
+    drop-shadow(
+      0 0 7px rgba(218,166,71,.20)
+    );
+}
+.word-kitchen {
+  margin-left: 9px;
+
+  font-family:
+    "Cormorant Garamond",
+    Georgia,
+    serif;
+
+  font-size:
+    clamp(31px, 8vw, 43px);
+
+  font-weight: 500;
+
+  letter-spacing: 1.5px;
+
+  color: #eadcc4;
+}
+
+
+/* =====================================================
+   DIVIDER
+===================================================== */
+
+.royal-divider {
+  margin-top: 17px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 8px;
+
+  opacity: 0;
+
+  animation:
+    dividerAppear
+    .7s
+    3.65s
+    ease-out
+    forwards;
+}
+
+
+.royal-divider span {
+  display: block;
+
+  width: 0;
+  height: 1px;
+
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      #d1a14d
+    );
+
+  animation:
+    dividerExpand
+    .75s
+    3.65s
+    ease-out
+    forwards;
+}
+
+
+.royal-divider span:last-child {
+  background:
+    linear-gradient(
+      90deg,
+      #d1a14d,
+      transparent
+    );
+}
+
+
+.royal-divider i {
+  width: 5px;
+  height: 5px;
+
+  display: block;
+
+  border:
+    1px solid #dfb45d;
+
+  transform: rotate(45deg);
+}
+
+
+/* =====================================================
+   TAGLINE
+===================================================== */
+
+.royal-tagline {
+  margin-top: 13px;
+
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+
+  gap: 7px;
+
+  white-space: nowrap;
+
+  color: #d8c7a8;
+}
+
+
+.signature-word {
+  display: inline-flex;
+  align-items: baseline;
+
+  font-family:
+    "Cormorant Garamond",
+    Georgia,
+    serif;
+
+  font-size:
+    clamp(17px, 4.6vw, 21px);
+
+  font-weight: 500;
+
+  letter-spacing: 1px;
+}
+
+
+.signature-rest {
+  opacity: 0;
+
+  filter: blur(5px);
+
+  animation:
+    signatureLettersReveal
+    .85s
+    4.35s
+    ease-out
+    forwards;
+}
+
+
+.signature-s {
+  display: inline-block;
+
+  margin-right: 1px;
+
+  /*
+    Extra glyph space for italic S.
+    Target remains invisible, but JS gets
+    a safer landing box.
+  */
+  padding:
+    2px 7px 5px 3px;
+
+  box-sizing: content-box;
+
+  overflow: visible;
+
+  font-family:
+    "Bodoni Moda",
+    "Cormorant Garamond",
+    Georgia,
+    serif;
+
+  font-size: 1.5em;
+
+  font-weight: 500;
+  font-style: italic;
+
+  line-height: 1;
+
+  color: #e4b65c;
+
+  background:
+    linear-gradient(
+      120deg,
+      #966426 0%,
+      #efce76 48%,
+      #a97328 100%
+    );
+
+  -webkit-background-clip: text;
+  background-clip: text;
+
+  -webkit-text-fill-color: transparent;
+
+  opacity: 0;
+}
+/* left S arrives at Signature */
+
+/* =====================================================
+   REAL SS LANDING TARGETS
+===================================================== */
+
+/*
+  These S letters exist only so JavaScript can
+  measure the exact final positions of:
+
+  Signature
+  Samanthapudi
+
+  They NEVER become visible.
+
+  The visible letters are the flying SS.
+*/
+
+.real-target-s {
+  display: inline-block;
+
+  opacity: 0 !important;
+
+  visibility: hidden !important;
+
+  transform: none !important;
+
+  animation: none !important;
+
+  filter: none !important;
+
+  pointer-events: none;
+}
+
+
+/* =====================================================
+   SS VIEWPORT FLIGHT LAYER
+===================================================== */
+
+/*
+  This layer sits directly on the screen instead
+  of inside .royal-monogram.
+
+  Therefore .royal-monogram transforms cannot
+  change the final landing coordinates.
+*/
+
+.ss-flight-layer {
+  position: fixed;
+
+  inset: 0;
+
+  z-index: 1000001;
+
+  overflow: visible;
+
+  pointer-events: none;
+}
+
+
+/* =====================================================
+   FLYING ORIGINAL S LETTERS
+===================================================== */
+
+.flying-royal-s {
+  position: fixed;
+
+  display: flex;
+
+  align-items: flex-start;
+  justify-content: flex-start;
+
+  margin: 0;
+
+  padding:
+    10px 14px 14px 10px;
+
+  box-sizing: border-box;
+
+  overflow: visible;
+
+  font-family:
+    "Bodoni Moda",
+    "Cormorant Garamond",
+    Georgia,
+    serif;
+
+  font-size: 132px;
+
+  font-weight: 500;
+
+  font-style: italic;
+
+  line-height: 1;
+
+  color: #e4b65c;
+
+  background:
+    linear-gradient(
+      115deg,
+      #76501d 0%,
+      #b67d2e 18%,
+      #e0b65d 36%,
+      #fff0ad 50%,
+      #d7a247 65%,
+      #986522 82%,
+      #6f491b 100%
+    );
+
+  background-size: 230% 100%;
+
+  -webkit-background-clip: text;
+  background-clip: text;
+
+  -webkit-text-fill-color: transparent;
+
+  filter:
+    drop-shadow(
+      0 8px 10px rgba(0,0,0,.55)
+    )
+    drop-shadow(
+      0 0 7px rgba(219,167,71,.15)
+    );
+
+  opacity: 1;
+
+  transform: rotate(0deg);
+
+  transform-origin: top left;
+
+  /*
+    These properties animate from the
+    measured original SS position to the
+    measured tagline position.
+  */
+
+  transition:
+    left 1.35s cubic-bezier(.16,.82,.22,1),
+    top 1.35s cubic-bezier(.16,.82,.22,1),
+    width 1.35s cubic-bezier(.16,.82,.22,1),
+    height 1.35s cubic-bezier(.16,.82,.22,1),
+    font-size 1.35s cubic-bezier(.16,.82,.22,1),
+    padding 1.35s cubic-bezier(.16,.82,.22,1),
+    filter .8s ease;
+}
+
+
+/* =====================================================
+   LEFT S
+   -> Signature
+===================================================== */
+
+.flying-royal-s-left {
+  z-index: 2;
+}
+
+
+/* =====================================================
+   RIGHT S
+   -> Samanthapudi
+===================================================== */
+
+.flying-royal-s-right {
+  z-index: 1;
+}
+
+
+/* =====================================================
+   WHEN FLIGHT STARTS
+===================================================== */
+
+.flying-royal-s.is-flying {
+  font-size:
+    clamp(25.5px, 6.9vw, 31.5px);
+
+  line-height: 1;
+
+  /*
+    Italic Bodoni S extends outside its
+    normal glyph box.
+
+    Give it extra breathing room so the
+    upper/lower curves are never clipped.
+  */
+  padding:
+    2px 7px 5px 3px;
+
+  overflow: visible;
+
+  box-sizing: content-box;
+
+  filter:
+    drop-shadow(
+      0 0 8px rgba(239,206,118,.38)
+    );
+}
+.royal-tagline em {
+  font-family:
+    "Cormorant Garamond",
+    Georgia,
+    serif;
+
+  font-size: 14px;
+
+  font-weight: 400;
+  font-style: italic;
+
+  color:
+    rgba(216,199,168,.58);
+
+  opacity: 0;
+
+  animation:
+    simpleFade
+    .7s
+    4.5s
+    ease-out
+    forwards;
+}
+
+
+/* =====================================================
+   SUBTITLE
+===================================================== */
+
+.royal-subtitle {
+  margin-top: 16px;
+
+  font-family:
+    "Cormorant Garamond",
+    Georgia,
+    serif;
+
+  font-size: 9px;
+
+  font-weight: 500;
+
+  letter-spacing: 3.5px;
+
+  color:
+    rgba(211,166,82,.68);
+
+  opacity: 0;
+
+  transform: translateY(6px);
+
+  animation:
+    subtitleReveal
+    .8s
+    4.85s
+    ease-out
+    forwards;
+}
+
+
+/* =====================================================
+   ANIMATIONS
+===================================================== */
+
+@keyframes leftRoyalS {
+
+  0% {
+    opacity: 0;
+
+    transform:
+      translateY(-50%)
+      translateX(-30px)
+      scale(.65)
+      rotate(-14deg);
+
+    filter: blur(12px);
+  }
+
+  20% {
+    opacity: 1;
+
+    transform:
+      translateY(-50%)
+      translateX(-1px)
+      scale(1.04)
+      rotate(-7deg);
+
+    filter:
+      blur(0)
+      drop-shadow(
+        0 8px 10px rgba(0,0,0,.55)
+      );
+  }
+
+  45% {
+    opacity: 1;
+
+    transform:
+      translateY(-50%)
+      translateX(2px)
+      scale(1)
+      rotate(-7deg);
+  }
+
+  70% {
+    opacity: 1;
+
+    transform:
+      translateY(-50%)
+      translateX(2px)
+      scale(1)
+      rotate(-7deg);
+  }
+
+  100% {
+    opacity: 1;
+
+    transform:
+      translateY(-50%)
+      translateX(-22px)
+      scale(.88)
+      rotate(-4deg);
+  }
+}
+
+@keyframes rightRoyalS {
+
+  0% {
+    opacity: 0;
+
+    transform:
+      translateY(-50%)
+      translateX(8px)
+      scale(.65)
+      rotate(14deg);
+
+    filter: blur(12px);
+  }
+
+  20% {
+    opacity: 1;
+
+    transform:
+      translateY(-50%)
+      translateX(-25px)
+      scale(1.04)
+      rotate(7deg);
+
+    filter:
+      blur(0)
+      drop-shadow(
+        0 8px 10px rgba(0,0,0,.55)
+      );
+  }
+
+  45% {
+    opacity: 1;
+
+    transform:
+      translateY(-50%)
+      translateX(-28px)
+      scale(1)
+      rotate(7deg);
+  }
+
+  70% {
+    opacity: 1;
+
+    transform:
+      translateY(-50%)
+      translateX(-28px)
+      scale(1)
+      rotate(7deg);
+  }
+
+  100% {
+    opacity: 1;
+
+    transform:
+      translateY(-50%)
+      translateX(-5px)
+      scale(.88)
+      rotate(4deg);
+  }
+}
+
+@keyframes monogramContainer {
+
+  0% {
+    transform:
+      translate(-50%, -50%)
+      scale(.82);
+  }
+
+  22% {
+    transform:
+      translate(-50%, -50%)
+      scale(1);
+  }
+
+  53% {
+    transform:
+      translate(-50%, -50%)
+      scale(1);
+  }
+
+  72% {
+    transform:
+      translate(-50%, -60%)
+      scale(.92);
+  }
+
+  100% {
+    transform:
+      translate(-50%, -66%)
+      scale(.8);
+  }
+}
+
+
+@keyframes monogramShine {
+
+  0% {
+    left: -35%;
+    opacity: 0;
+  }
+
+  20% {
+    opacity: .8;
+  }
+
+  80% {
+    opacity: .6;
+  }
+
+  100% {
+    left: 115%;
+    opacity: 0;
+  }
+}
+
+
+@keyframes wordmarkReveal {
+
+  0% {
+    opacity: 0;
+
+    filter: blur(10px);
+
+    transform:
+      translateY(16px)
+      scale(.96);
+  }
+
+  55% {
+    opacity: 1;
+
+    filter: blur(0);
+
+    transform:
+      translateY(-1px)
+      scale(1.01);
+  }
+
+  100% {
+    opacity: 1;
+
+    filter: blur(0);
+
+    transform:
+      translateY(0)
+      scale(1);
+  }
+}
+
+
+
+
+@keyframes signatureLettersReveal {
+
+  from {
+    opacity: 0;
+
+    filter: blur(5px);
+
+    transform: translateY(5px);
+  }
+
+  to {
+    opacity: 1;
+
+    filter: blur(0);
+
+    transform: translateY(0);
+  }
+}
+
+
+@keyframes dividerAppear {
+
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: .85;
+  }
+}
+
+
+@keyframes dividerExpand {
+
+  from {
+    width: 0;
+  }
+
+  to {
+    width: 72px;
+  }
+}
+
+
+@keyframes simpleFade {
+
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+
+@keyframes subtitleReveal {
+
+  from {
+    opacity: 0;
+
+    transform: translateY(7px);
+  }
+
+  to {
+    opacity: .8;
+
+    transform: translateY(0);
+  }
+}
+
+
+/* =====================================================
+   FOOD ANIMATIONS
+===================================================== */
+
+@keyframes leftFoodReveal {
+
+  0%,
+  12% {
+    opacity: 0;
+
+    transform:
+      translate(-20px, -50%)
+      rotate(-12deg);
+  }
+
+  30% {
+    opacity: .26;
+
+    transform:
+      translate(0, -50%)
+      rotate(-8deg);
+  }
+
+  58% {
+    opacity: .18;
+  }
+
+  78%,
+  100% {
+    opacity: .07;
+  }
+}
+
+
+@keyframes rightFoodReveal {
+
+  0%,
+  17% {
+    opacity: 0;
+
+    transform:
+      translate(20px, -50%)
+      rotate(12deg);
+  }
+
+  34% {
+    opacity: .27;
+
+    transform:
+      translate(0, -50%)
+      rotate(8deg);
+  }
+
+  60% {
+    opacity: .18;
+  }
+
+  80%,
+  100% {
+    opacity: .07;
+  }
+}
+
+
+@keyframes handiReveal {
+
+  0%,
+  8% {
+    opacity: 0;
+
+    transform:
+      translate(-50%, -43%)
+      scale(.86);
+  }
+
+  26% {
+    opacity: .20;
+
+    transform:
+      translate(-50%, -50%)
+      scale(1);
+  }
+
+  55% {
+    opacity: .12;
+  }
+
+  70%,
+  100% {
+    opacity: 0;
+  }
+}
+
+
+@keyframes steamContainer {
+
+  0%,
+  7% {
+    opacity: 0;
+  }
+
+  20%,
+  48% {
+    opacity: 1;
+  }
+
+  67%,
+  100% {
+    opacity: 0;
+  }
+}
+
+
+@keyframes steamRise {
+
+  0% {
+    opacity: 0;
+
+    transform:
+      translateY(25px)
+      translateX(0)
+      scaleX(.8);
+  }
+
+  35% {
+    opacity: .42;
+  }
+
+  70% {
+    opacity: .18;
+
+    transform:
+      translateY(-25px)
+      translateX(8px)
+      scaleX(1.1);
+  }
+
+  100% {
+    opacity: 0;
+
+    transform:
+      translateY(-55px)
+      translateX(-5px)
+      scaleX(.8);
+  }
+}
+
+
+/* =====================================================
+   BACKGROUND ANIMATIONS
+===================================================== */
+
+@keyframes backgroundBreath {
+
+  0% {
+    opacity: .35;
+
+    transform:
+      translate(-50%, -50%)
+      scale(.65);
+  }
+
+  30% {
+    opacity: .95;
+
+    transform:
+      translate(-50%, -50%)
+      scale(1);
+  }
+
+  65% {
+    opacity: .65;
+
+    transform:
+      translate(-50%, -50%)
+      scale(.9);
+  }
+
+  100% {
+    opacity: .48;
+
+    transform:
+      translate(-50%, -50%)
+      scale(1.12);
+  }
+}
+
+
+@keyframes bottomGlow {
+
+  0% {
+    opacity: 0;
+
+    transform:
+      translateX(-50%)
+      scale(.75);
+  }
+
+  50% {
+    opacity: .8;
+
+    transform:
+      translateX(-50%)
+      scale(1);
+  }
+
+  100% {
+    opacity: .4;
+
+    transform:
+      translateX(-50%)
+      scale(1.15);
+  }
+}
+
+
+@keyframes particleFloat {
+
+  0% {
+    opacity: 0;
+
+    transform:
+      translateY(20px)
+      scale(.5);
+  }
+
+  35% {
+    opacity: .65;
+  }
+
+  70% {
+    opacity: .25;
+  }
+
+  100% {
+    opacity: 0;
+
+    transform:
+      translateY(-45px)
+      scale(1.2);
+  }
+}
+
+
+/* =====================================================
+   SMALL PHONES
+===================================================== */
+
+@media (max-width: 380px) {
+
+  .word-kshatriya {
+    font-size: 34px;
+  }
+
+  .word-brand-s {
+    font-size: 44px;
+  }
+
+  .word-kitchen {
+    margin-left: 6px;
+
+    font-size: 28px;
+
+    letter-spacing: .8px;
+  }
+
+  .signature-word {
+    font-size: 15px;
+
+    letter-spacing: .6px;
+  }
+
+  .royal-tagline {
+    gap: 5px;
+  }
+
+  .royal-subtitle {
+    font-size: 8px;
+
+    letter-spacing: 2.5px;
+  }
+
+  .food-art {
+    width: 95px;
+    height: 95px;
+  }
+}
