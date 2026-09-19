@@ -2307,8 +2307,8 @@ function Admin({
 
       message.lang = 'te-IN';
       message.rate = 0.8;
-      message.pitch = 2;
-      message.volume = 2;
+      message.pitch = 1;
+      message.volume = 1;
 
       window.speechSynthesis.speak(message);
     } catch (error) {
