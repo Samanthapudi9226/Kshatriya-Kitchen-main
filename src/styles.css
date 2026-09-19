@@ -2986,3 +2986,11 @@ textarea { min-height: 90px; resize: vertical; }
     grid-template-columns: 1fr;
   }
 }
+/* Admin Menu Management - compact item image */
+.admin-menu-item > img {
+  width: 72px;
+  height: 72px;
+  min-width: 72px;
+  object-fit: cover;
+  border-radius: 12px;
+}
