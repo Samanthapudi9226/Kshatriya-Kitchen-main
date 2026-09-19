@@ -424,9 +424,11 @@ return () => {
   }, [customerUser]);
   useEffect(() => {
     let cancelled = false;
+    let settingsChannel = null;
   
     async function loadSettings() {
-      const remoteSettings = await loadSettingsFromSupabase();
+      const remoteSettings =
+        await loadSettingsFromSupabase();
   
       if (!cancelled && remoteSettings) {
         setSettings(remoteSettings);
@@ -435,8 +437,43 @@ return () => {
   
     loadSettings();
   
+    if (supabase) {
+      settingsChannel = supabase
+        .channel("restaurant-settings-realtime")
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "restaurant_settings",
+            filter: "id=eq.1"
+          },
+          async () => {
+            const remoteSettings =
+              await loadSettingsFromSupabase();
+  
+            if (
+              !cancelled &&
+              remoteSettings
+            ) {
+              setSettings(remoteSettings);
+            }
+          }
+        )
+        .subscribe();
+    }
+  
     return () => {
       cancelled = true;
+  
+      if (
+        supabase &&
+        settingsChannel
+      ) {
+        supabase.removeChannel(
+          settingsChannel
+        );
+      }
     };
   }, []);
 
@@ -450,27 +487,91 @@ return () => {
   );
 
   const cartCount = cart.reduce(
-    (total, item) => total + item.quantity,
+    (total, item) =>
+      total + item.quantity,
     0
   );
-
+  
+  /*
+   * Returns the current selling price.
+   *
+   * Late Night Offers OFF:
+   * normal price.
+   *
+   * Late Night Offers ON + valid offer:
+   * late night price.
+   */
+  function getEffectivePrice(item) {
+    const normalPrice =
+      Number(item?.price || 0);
+  
+    const lateNightPrice =
+      Number(item?.lateNightPrice || 0);
+  
+    if (
+      settings.lateNightOffersEnabled &&
+      lateNightPrice > 0 &&
+      lateNightPrice < normalPrice
+    ) {
+      return lateNightPrice;
+    }
+  
+    return normalPrice;
+  }
+  
   const subtotal = cart.reduce(
-    (total, item) => total + item.price * item.quantity,
+    (total, item) => {
+      const normalPrice =
+        Number(
+          item.normalPrice ??
+          item.price ??
+          0
+        );
+  
+      const lateNightPrice =
+        Number(
+          item.lateNightPrice || 0
+        );
+  
+      const effectivePrice =
+        settings.lateNightOffersEnabled === true &&
+        lateNightPrice > 0 &&
+        lateNightPrice < normalPrice
+          ? lateNightPrice
+          : normalPrice;
+  
+      return (
+        total +
+        effectivePrice *
+          Number(item.quantity || 0)
+      );
+    },
     0
   );
-
+  
   const delivery =
-  subtotal > 0
-    ? calculateDeliveryCharge(deliveryDistance)
-    : 0;
-
+    subtotal > 0
+      ? calculateDeliveryCharge(
+          deliveryDistance
+        )
+      : 0;
+  
   const service =
-    subtotal > 0 ? Number(settings.serviceCharge || 0) : 0;
-
+    subtotal > 0
+      ? Number(
+          settings.serviceCharge || 0
+        )
+      : 0;
+  
   const tax =
-    subtotal * (Number(settings.tax || 0) / 100);
-
-  const total = subtotal + delivery + service + tax;
+    subtotal *
+    (Number(settings.tax || 0) / 100);
+  
+  const total =
+    subtotal +
+    delivery +
+    service +
+    tax;
   useEffect(() => {
     let cancelled = false;
   
@@ -543,32 +644,57 @@ return () => {
   ]);
   
   function addToCart(item) {
-    
     setCart((current) => {
       const found = current.find(
-        (cartItem) => cartItem.id === item.id
-      );
-
-      if (found) {
-        return current.map((cartItem) =>
+        (cartItem) =>
           cartItem.id === item.id
-            ? {
-                ...cartItem,
-                quantity: cartItem.quantity + 1
-              }
-            : cartItem
+      );
+  
+      if (found) {
+        return current.map(
+          (cartItem) =>
+            cartItem.id === item.id
+              ? {
+                  ...cartItem,
+                  quantity:
+                    cartItem.quantity + 1
+                }
+              : cartItem
         );
       }
-
+  
+      const normalPrice =
+        Number(item.price || 0);
+  
+      const lateNightPrice =
+        Number(
+          item.lateNightPrice || 0
+        );
+  
+      const offerApplied =
+        settings.lateNightOffersEnabled === true &&
+        lateNightPrice > 0 &&
+        lateNightPrice < normalPrice;
+  
       return [
         ...current,
         {
           ...item,
+  
+          normalPrice,
+  
+          price: offerApplied
+            ? lateNightPrice
+            : normalPrice,
+  
+          lateNightOfferApplied:
+            offerApplied,
+  
           quantity: 1
         }
       ];
     });
-
+  
     setCartOpen(true);
   }
 
@@ -687,15 +813,49 @@ setPage("checkout");
 setCartOpen(false);
   }
 
-async function placeOrder(
-  customer,
-  payment = null
-) {
-  const order = {
+  async function placeOrder(
+    customer,
+    payment = null
+  ) {
+    const finalOrderItems = cart.map(
+      (item) => {
+        const normalPrice =
+          Number(
+            item.normalPrice ??
+            item.price ??
+            0
+          );
+  
+        const lateNightPrice =
+          Number(
+            item.lateNightPrice || 0
+          );
+  
+        const offerApplied =
+          settings.lateNightOffersEnabled === true &&
+          lateNightPrice > 0 &&
+          lateNightPrice < normalPrice;
+  
+        return {
+          ...item,
+  
+          normalPrice,
+  
+          price: offerApplied
+            ? lateNightPrice
+            : normalPrice,
+  
+          lateNightOfferApplied:
+            offerApplied
+        };
+      }
+    );
+  
+    const order = {
     id: `KK-${Date.now().toString().slice(-6)}`,
     user_id: customerUser?.id || null,
     customer,
-    items: cart,
+    items: finalOrderItems,
     subtotal,
     deliveryDistance,
     deliveryCharge: delivery,
@@ -1151,12 +1311,13 @@ setMobilePage("home");
 
     {cartOpen && (
       <CartDrawer
-        cart={cart}
-        total={total}
-        changeQuantity={changeQuantity}
-        close={() => setCartOpen(false)}
-        checkout={startCheckout}
-      />
+      cart={cart}
+      total={total}
+      settings={settings}
+      changeQuantity={changeQuantity}
+      close={() => setCartOpen(false)}
+      checkout={startCheckout}
+    />
     )}
   </>
 );
@@ -1443,11 +1604,12 @@ setMobilePage("home");
             <div className="food-grid">
               {filteredMenu.map((item) => (
                 <FoodCard
-                  key={item.id}
-                  item={item}
-                  addToCart={addToCart}
-                  view={() => setSelected(item)}
-                />
+                key={item.id}
+                item={item}
+                settings={settings}
+                addToCart={addToCart}
+                view={() => setSelected(item)}
+              />
               ))}
             </div>
           </section>
@@ -1650,7 +1812,12 @@ setMobilePage("home");
   );
 }
 
-function FoodCard({ item, addToCart, view }) {
+function FoodCard({
+  item,
+  settings,
+  addToCart,
+  view
+}) {
   return (
     <article
       className={`food-card ${
@@ -1684,19 +1851,61 @@ function FoodCard({ item, addToCart, view }) {
         <p>{item.description}</p>
 
         <div className="card-footer">
-          <strong>
-            {money(item.price)}
-          </strong>
-
-          <button
-            className="add-button"
-            onClick={() => addToCart(item)}
-            disabled={!item.available}
+  <div>
+    {settings.lateNightOffersEnabled &&
+    Number(item.lateNightPrice || 0) > 0 &&
+    Number(item.lateNightPrice || 0) <
+      Number(item.price || 0) ? (
+      <>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px"
+          }}
+        >
+          <span
+            style={{
+              textDecoration: "line-through",
+              opacity: 0.55
+            }}
           >
-            <Plus size={18} />
-            {item.available ? "Add" : "Unavailable"}
-          </button>
+            {money(item.price)}
+          </span>
+
+          <strong>
+            {money(item.lateNightPrice)}
+          </strong>
         </div>
+
+        <small
+          style={{
+            display: "block",
+            marginTop: "4px",
+            fontWeight: 700
+          }}
+        >
+          LATE NIGHT OFFER
+        </small>
+      </>
+    ) : (
+      <strong>
+        {money(item.price)}
+      </strong>
+    )}
+  </div>
+
+  <button
+    className="add-button"
+    onClick={() => addToCart(item)}
+    disabled={!item.available}
+  >
+    <Plus size={18} />
+    {item.available
+      ? "Add"
+      : "Unavailable"}
+  </button>
+</div>
       </div>
     </article>
   );
@@ -1705,6 +1914,7 @@ function FoodCard({ item, addToCart, view }) {
 function CartDrawer({
   cart,
   total,
+  settings,
   changeQuantity,
   close,
   checkout
@@ -1759,11 +1969,25 @@ function CartDrawer({
                     <h3>{item.name}</h3>
 
                     <strong>
-                      {money(
-                        item.price *
-                          item.quantity
-                      )}
-                    </strong>
+  {money(
+    (
+      settings.lateNightOffersEnabled === true &&
+      Number(item.lateNightPrice || 0) > 0 &&
+      Number(item.lateNightPrice || 0) <
+        Number(
+          item.normalPrice ??
+          item.price ??
+          0
+        )
+        ? Number(item.lateNightPrice)
+        : Number(
+            item.normalPrice ??
+            item.price ??
+            0
+          )
+    ) * item.quantity
+  )}
+</strong>
 
                     <div className="quantity">
                       <button
@@ -2271,11 +2495,25 @@ function Checkout({
               </span>
 
               <strong>
-                {money(
-                  item.price *
-                    item.quantity
-                )}
-              </strong>
+  {money(
+    (
+      settings.lateNightOffersEnabled === true &&
+      Number(item.lateNightPrice || 0) > 0 &&
+      Number(item.lateNightPrice || 0) <
+        Number(
+          item.normalPrice ??
+          item.price ??
+          0
+        )
+        ? Number(item.lateNightPrice)
+        : Number(
+            item.normalPrice ??
+            item.price ??
+            0
+          )
+    ) * item.quantity
+  )}
+</strong>
             </div>
           ))}
 
@@ -2849,6 +3087,20 @@ setLoggedIn(true);
 
 <button
   className={
+    tab === "late-night"
+      ? "selected"
+      : ""
+  }
+  onClick={() =>
+    setTab("late-night")
+  }
+>
+  <Clock3 size={17} />
+  Late Night Offers
+</button>
+
+<button
+  className={
     tab === "orders"
       ? "selected"
       : ""
@@ -3178,6 +3430,151 @@ setLoggedIn(true);
     </div>
   </section>
 )}
+{tab === "late-night" && (
+  <section>
+    <div className="admin-heading">
+      <div>
+        <p className="eyebrow">
+          SPECIAL PRICING
+        </p>
+
+        <h1>
+          Late Night Offers
+        </h1>
+
+        <p>
+          Turn late night pricing on or off
+          and set a special price for each
+          menu item.
+        </p>
+      </div>
+
+      <button
+        type="button"
+        className="gold-button"
+        onClick={async () => {
+          const nextSettings = {
+            ...settings,
+            lateNightOffersEnabled:
+              !settings.lateNightOffersEnabled
+          };
+
+          setSettings(nextSettings);
+
+          const saved =
+            await saveSettingsToSupabase(
+              nextSettings
+            );
+
+          if (!saved) {
+            alert(
+              "Late Night Offer setting could not be saved."
+            );
+          }
+        }}
+      >
+        {settings.lateNightOffersEnabled
+          ? "Late Night Offers ON"
+          : "Late Night Offers OFF"}
+      </button>
+    </div>
+
+    <div className="admin-menu-list">
+      {menu.map((item) => (
+        <div
+          className="admin-menu-item"
+          key={item.id}
+        >
+          <img
+            src={item.image}
+            alt={item.name}
+          />
+
+          <div
+            style={{
+              flex: 1
+            }}
+          >
+            <strong>
+              {item.name}
+            </strong>
+
+            <p>
+              Normal Price:{" "}
+              {money(item.price)}
+            </p>
+          </div>
+
+          <div
+            style={{
+              minWidth: "180px"
+            }}
+          >
+            <label>
+              Late Night Price
+
+              <input
+                type="number"
+                min="0"
+                value={
+                  item.lateNightPrice ?? ""
+                }
+                placeholder="Offer price"
+                onChange={(event) => {
+                  const value =
+                    event.target.value;
+
+                  setMenu(
+                    (currentMenu) =>
+                      currentMenu.map(
+                        (menuItem) =>
+                          menuItem.id ===
+                          item.id
+                            ? {
+                                ...menuItem,
+
+                                lateNightPrice:
+                                  value === ""
+                                    ? ""
+                                    : Number(
+                                        value
+                                      )
+                              }
+                            : menuItem
+                      )
+                  );
+                }}
+              />
+            </label>
+          </div>
+        </div>
+      ))}
+    </div>
+
+    <div
+      style={{
+        marginTop: "24px"
+      }}
+    >
+      <button
+        type="button"
+        className="gold-button"
+        onClick={async () => {
+          await saveMenuToSupabase(
+            menu
+          );
+
+          alert(
+            "Late Night Offer prices saved successfully."
+          );
+        }}
+      >
+        Save Offer Prices
+      </button>
+    </div>
+  </section>
+)}
+
 
 {tab === "stock" && (
   <section>
