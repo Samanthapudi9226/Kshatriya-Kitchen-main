@@ -2617,41 +2617,147 @@ setLoggedIn(true);
   }
 
   async function updateStock(
-id,
-totalStock
-) {
-const safeTotal = Math.max(
-  0,
-  Number(totalStock) || 0
-);
-
-const updatedMenu = menu.map((item) => {
-  if (item.id !== id) {
-    return item;
+    id,
+    totalStock
+  ) {
+    const safeTotal = Math.max(
+      0,
+      Number(totalStock) || 0
+    );
+  
+    const updatedMenu = menu.map((item) => {
+      if (item.id !== id) {
+        return item;
+      }
+  
+      const soldStock = Math.max(
+        0,
+        Number(item.soldStock) || 0
+      );
+  
+      const liveStock = Math.max(
+        0,
+        safeTotal - soldStock
+      );
+  
+      return {
+        ...item,
+        totalStock: safeTotal,
+        soldStock,
+        available: liveStock > 0
+      };
+    });
+  
+    setMenu(updatedMenu);
+  
+    await saveMenuToSupabase(
+      updatedMenu
+    );
   }
-
-  const soldStock = Math.max(
-    0,
-    Number(item.soldStock) || 0
-  );
-
-  const liveStock = Math.max(
-    0,
-    safeTotal - soldStock
-  );
-
-  return {
-    ...item,
-    totalStock: safeTotal,
-    soldStock,
-    available: liveStock > 0
-  };
-});
-
-setMenu(updatedMenu);
-
-await saveMenuToSupabase(updatedMenu);
-}	
+  
+  async function deductDeliveredOrderStock(
+    order
+  ) {
+    /*
+     * If stock was already deducted for this
+     * order, never deduct it again.
+     */
+    if (order.stockDeducted) {
+      return order;
+    }
+  
+    const orderItems =
+      Array.isArray(order.items)
+        ? order.items
+        : [];
+  
+    const updatedMenu =
+      menu.map((menuItem) => {
+        const orderedItem =
+          orderItems.find(
+            (item) =>
+              String(item.id) ===
+              String(menuItem.id)
+          );
+  
+        if (!orderedItem) {
+          return menuItem;
+        }
+  
+        const orderedQuantity =
+          Math.max(
+            0,
+            Number(
+              orderedItem.quantity
+            ) || 0
+          );
+  
+        const totalStock =
+          Math.max(
+            0,
+            Number(
+              menuItem.totalStock
+            ) || 0
+          );
+  
+        const currentSoldStock =
+          Math.max(
+            0,
+            Number(
+              menuItem.soldStock
+            ) || 0
+          );
+  
+        const newSoldStock =
+          Math.min(
+            totalStock,
+            currentSoldStock +
+              orderedQuantity
+          );
+  
+        const newLiveStock =
+          Math.max(
+            0,
+            totalStock -
+              newSoldStock
+          );
+  
+        return {
+          ...menuItem,
+  
+          soldStock:
+            newSoldStock,
+  
+          available:
+            newLiveStock > 0
+        };
+      });
+  
+    /*
+     * Update Stock Management UI.
+     */
+    setMenu(updatedMenu);
+  
+    /*
+     * Save updated stock to Supabase.
+     */
+    await saveMenuToSupabase(
+      updatedMenu
+    );
+  
+    /*
+     * Mark this order permanently so
+     * Delivered cannot deduct stock twice.
+     */
+    return {
+      ...order,
+  
+      stockDeducted: true,
+  
+      stockDeductedAt:
+        new Date().toISOString()
+    };
+  }	
 
   function updateSetting(
     field,
@@ -3311,18 +3417,42 @@ await saveMenuToSupabase(updatedMenu);
   )}
 </div>
 
-                    <select
+                    
+<select
   value={order.status || "Received"}
   onChange={async (event) => {
-    const newStatus = event.target.value;
+    const newStatus =
+      event.target.value;
 
-    const updatedOrder = {
+    let updatedOrder = {
       ...order,
-      status: newStatus,
-      updatedAt: new Date().toISOString()
+
+      status:
+        newStatus,
+
+      updatedAt:
+        new Date().toISOString()
     };
 
-    // Update admin UI immediately
+    /*
+     * STOCK MANAGEMENT
+     *
+     * Only the FIRST time an order
+     * becomes Delivered, deduct stock.
+     */
+    if (
+      newStatus === "Delivered" &&
+      !order.stockDeducted
+    ) {
+      updatedOrder =
+        await deductDeliveredOrderStock(
+          updatedOrder
+        );
+    }
+
+    /*
+     * Update Orders UI immediately.
+     */
     setOrders((current) =>
       current.map((entry) =>
         entry.id === order.id
@@ -3331,15 +3461,29 @@ await saveMenuToSupabase(updatedMenu);
       )
     );
 
-    // Save status to Supabase
+    /*
+     * Save:
+     * - status
+     * - stockDeducted
+     * - stockDeductedAt
+     *
+     * into the order in Supabase.
+     */
     if (supabase) {
-      const { error } = await supabase
-        .from("orders")
-        .update({
-          order_data: updatedOrder,
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", order.id);
+      const { error } =
+        await supabase
+          .from("orders")
+          .update({
+            order_data:
+              updatedOrder,
+
+            updated_at:
+              new Date().toISOString()
+          })
+          .eq(
+            "id",
+            order.id
+          );
 
       if (error) {
         console.error(
@@ -3355,7 +3499,9 @@ await saveMenuToSupabase(updatedMenu);
       }
     }
 
-    // Open customer WhatsApp with prefilled status message
+    /*
+     * Existing WhatsApp status flow.
+     */
     sendCustomerStatusWhatsApp(
       updatedOrder,
       newStatus
