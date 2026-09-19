@@ -2301,12 +2301,14 @@ function Admin({
 
       window.speechSynthesis.cancel();
 
-      const message = new SpeechSynthesisUtterance('Fresh order received');
+      const message = new SpeechSynthesisUtterance(
+        'మీకు ఒక కొత్త ఆర్డర్ వచ్చింది'
+      );
 
-      message.lang = 'en-IN';
-      message.rate = 0.9;
-      message.pitch = 1;
-      message.volume = 1;
+      message.lang = 'te-IN';
+      message.rate = 0.8;
+      message.pitch = 2;
+      message.volume = 2;
 
       window.speechSynthesis.speak(message);
     } catch (error) {
