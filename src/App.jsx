@@ -1922,55 +1922,26 @@ function Admin({
 
   function playNewOrderSound() {
     try {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-
-      if (!AudioContext) {
+      if (!('speechSynthesis' in window)) {
+        console.error('Speech synthesis is not supported.');
         return;
       }
 
-      const audioContext = new AudioContext();
+      // Stop any previous announcement
+      window.speechSynthesis.cancel();
 
-      const now = audioContext.currentTime;
+      const message = new SpeechSynthesisUtterance('Fresh order received');
 
-      function beep(frequency, startTime, duration) {
-        const oscillator = audioContext.createOscillator();
+      message.lang = 'en-IN';
+      message.rate = 0.9;
+      message.pitch = 1;
+      message.volume = 1;
 
-        const gain = audioContext.createGain();
-
-        oscillator.type = 'sine';
-
-        oscillator.frequency.setValueAtTime(frequency, startTime);
-
-        gain.gain.setValueAtTime(0.0001, startTime);
-
-        gain.gain.exponentialRampToValueAtTime(0.8, startTime + 0.02);
-
-        gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
-
-        oscillator.connect(gain);
-        gain.connect(audioContext.destination);
-
-        oscillator.start(startTime);
-
-        oscillator.stop(startTime + duration);
-      }
-
-      // 🔔 LOUD NEW ORDER ALERT
-      beep(880, now, 0.45);
-      beep(1174, now + 0.18, 0.45);
-      beep(880, now + 0.36, 0.55);
-
-      // Extra final high-pitched alert
-      beep(1320, now + 0.62, 0.5);
-
-      setTimeout(() => {
-        audioContext.close();
-      }, 1500);
+      window.speechSynthesis.speak(message);
     } catch (error) {
-      console.error('Could not play notification sound:', error);
+      console.error('Could not play order notification:', error);
     }
   }
-
   useEffect(() => {
     soundEnabledRef.current = soundEnabled;
   }, [soundEnabled]);
@@ -2192,25 +2163,23 @@ function Admin({
         </button>
 
         <button onClick={exit}>
-  <ArrowLeft size={17} />
-  Storefront
-</button>
+          <ArrowLeft size={17} />
+          Storefront
+        </button>
 
-<button
-  onClick={async () => {
-    sessionStorage.removeItem(
-      "kk-admin-auth"
-    );
+        <button
+          onClick={async () => {
+            sessionStorage.removeItem('kk-admin-auth');
 
-    if (supabase) {
-      await supabase.auth.signOut();
-    }
+            if (supabase) {
+              await supabase.auth.signOut();
+            }
 
-    setLoggedIn(false);
-  }}
->
-  Logout
-</button>
+            setLoggedIn(false);
+          }}
+        >
+          Logout
+        </button>
       </aside>
 
       <main className="admin-main">
