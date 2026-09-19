@@ -1914,7 +1914,7 @@ function Admin({
   const [loginLoading, setLoginLoading] = useState(false);
 
   const [tab, setTab] = useState('dashboard');
-  const [soundEnabled, setSoundEnabled] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
 
   const knownOrderIdsRef = useRef(new Set());
 
