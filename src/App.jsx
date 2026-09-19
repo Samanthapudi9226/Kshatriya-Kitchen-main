@@ -2370,8 +2370,11 @@ function Admin({
   exit,
   sendCustomerStatusWhatsApp
 }) {
-  const [loggedIn, setLoggedIn] =
-    useState(false);
+  const [loggedIn, setLoggedIn] = useState(() => {
+  return (
+    sessionStorage.getItem("kk-admin-auth") === "true"
+  );
+});
 
   const [email, setEmail] =
     useState("");
@@ -2394,84 +2397,36 @@ function Admin({
   const soundEnabledRef = useRef(false);
 
   function playNewOrderSound() {
-    try {
-      const AudioContext =
-        window.AudioContext ||
-        window.webkitAudioContext;
-  
-      if (!AudioContext) {
-        return;
-      }
-  
-      const audioContext =
-        new AudioContext();
-  
-      const now =
-        audioContext.currentTime;
-  
-      function beep(
-        frequency,
-        startTime,
-        duration
-      ) {
-        const oscillator =
-          audioContext.createOscillator();
-  
-        const gain =
-          audioContext.createGain();
-  
-        oscillator.type = "sine";
-  
-        oscillator.frequency.setValueAtTime(
-          frequency,
-          startTime
-        );
-  
-        gain.gain.setValueAtTime(
-          0.0001,
-          startTime
-        );
-  
-        gain.gain.exponentialRampToValueAtTime(
-          0.8,
-          startTime + 0.02
-        );
-  
-        gain.gain.exponentialRampToValueAtTime(
-          0.0001,
-          startTime + duration
-        );
-  
-        oscillator.connect(gain);
-        gain.connect(
-          audioContext.destination
-        );
-  
-        oscillator.start(startTime);
-  
-        oscillator.stop(
-          startTime + duration
-        );
-      }
-  
-      // 🔔 LOUD NEW ORDER ALERT
-      beep(880, now, 0.45);
-      beep(1174, now + 0.18, 0.45);
-      beep(880, now + 0.36, 0.55);
-  
-      // Extra final high-pitched alert
-      beep(1320, now + 0.62, 0.5);
-  
-      setTimeout(() => {
-        audioContext.close();
-      }, 1500);
-    } catch (error) {
+  try {
+    if (!("speechSynthesis" in window)) {
       console.error(
-        "Could not play notification sound:",
-        error
+        "Speech synthesis is not supported."
       );
+      return;
     }
+
+    window.speechSynthesis.cancel();
+
+    const message =
+      new SpeechSynthesisUtterance(
+        "Fresh order received"
+      );
+
+    message.lang = "en-IN";
+    message.rate = 0.9;
+    message.pitch = 1;
+    message.volume = 1;
+
+    window.speechSynthesis.speak(
+      message
+    );
+  } catch (error) {
+    console.error(
+      "Could not play order notification:",
+      error
+    );
   }
+}
 
   useEffect(() => {
     soundEnabledRef.current =
@@ -2634,11 +2589,16 @@ function Admin({
               setLoginLoading(false);
             
               if (error) {
-                alert(error.message);
-                return;
-              }
-            
-              setLoggedIn(true);
+  alert(error.message);
+  return;
+}
+
+sessionStorage.setItem(
+  "kk-admin-auth",
+  "true"
+);
+
+setLoggedIn(true);
             }}
           >
             {loginLoading
@@ -2810,22 +2770,280 @@ await saveMenuToSupabase(updatedMenu);
         </button>
 
         <button onClick={exit}>
-          <ArrowLeft size={17} />
-          Storefront
-        </button>
+  <ArrowLeft size={17} />
+  Storefront
+</button>
+
+<button
+  onClick={async () => {
+    sessionStorage.removeItem(
+      "kk-admin-auth"
+    );
+
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
+
+    setLoggedIn(false);
+  }}
+>
+  Logout
+</button>
       </aside>
 
       <main className="admin-main">
         {tab === "dashboard" && (
-          <AdminDashboard
-          menu={menu}
-          orders={orders}
-          soundEnabled={soundEnabled}
-          setSoundEnabled={setSoundEnabled}
-          playNewOrderSound={playNewOrderSound}
+  <AdminDashboard
+    menu={menu}
+    orders={orders}
+    soundEnabled={soundEnabled}
+    setSoundEnabled={setSoundEnabled}
+    playNewOrderSound={playNewOrderSound}
+  />
+)}
 
-        />
-        )}
+{tab === "menu" && (
+  <section>
+    <div className="admin-heading">
+      <div>
+        <p className="eyebrow">
+          MENU
+        </p>
+
+        <h1>
+          Menu management
+        </h1>
+
+        <p>
+          Manage menu items, prices and
+          availability.
+        </p>
+      </div>
+    </div>
+
+    <div className="admin-menu-list">
+      {menu.map((item) => (
+        <div
+          className="admin-menu-item"
+          key={item.id}
+        >
+          <img
+            src={item.image}
+            alt={item.name}
+          />
+
+          <div className="admin-menu-fields">
+            <label>
+              Item name
+
+              <input
+                value={item.name}
+                onChange={(event) => {
+                  setMenu((currentMenu) =>
+                    currentMenu.map(
+                      (menuItem) =>
+                        menuItem.id === item.id
+                          ? {
+                              ...menuItem,
+                              name:
+                                event.target.value
+                            }
+                          : menuItem
+                    )
+                  );
+                }}
+              />
+            </label>
+
+            <label>
+              Category
+
+              <input
+                value={item.category}
+                onChange={(event) => {
+                  setMenu((currentMenu) =>
+                    currentMenu.map(
+                      (menuItem) =>
+                        menuItem.id === item.id
+                          ? {
+                              ...menuItem,
+                              category:
+                                event.target.value
+                            }
+                          : menuItem
+                    )
+                  );
+                }}
+              />
+            </label>
+
+            <label>
+              Price
+
+              <input
+                type="number"
+                min="0"
+                value={item.price}
+                onChange={(event) => {
+                  setMenu((currentMenu) =>
+                    currentMenu.map(
+                      (menuItem) =>
+                        menuItem.id === item.id
+                          ? {
+                              ...menuItem,
+                              price:
+                                Number(
+                                  event.target.value
+                                ) || 0
+                            }
+                          : menuItem
+                    )
+                  );
+                }}
+              />
+            </label>
+
+            <label>
+              Image URL
+
+              <input
+                value={item.image || ""}
+                onChange={(event) => {
+                  setMenu((currentMenu) =>
+                    currentMenu.map(
+                      (menuItem) =>
+                        menuItem.id === item.id
+                          ? {
+                              ...menuItem,
+                              image:
+                                event.target.value
+                            }
+                          : menuItem
+                    )
+                  );
+                }}
+              />
+            </label>
+
+            <label>
+              Description
+
+              <textarea
+                value={
+                  item.description || ""
+                }
+                onChange={(event) => {
+                  setMenu((currentMenu) =>
+                    currentMenu.map(
+                      (menuItem) =>
+                        menuItem.id === item.id
+                          ? {
+                              ...menuItem,
+                              description:
+                                event.target.value
+                            }
+                          : menuItem
+                    )
+                  );
+                }}
+              />
+            </label>
+          </div>
+
+          <div className="admin-menu-actions">
+            <button
+              className={
+                item.available
+                  ? "availability on"
+                  : "availability"
+              }
+              onClick={async () => {
+                const updatedItem = {
+                  ...item,
+                  available:
+                    !item.available
+                };
+
+                setMenu(
+                  (currentMenu) =>
+                    currentMenu.map(
+                      (menuItem) =>
+                        menuItem.id ===
+                        item.id
+                          ? updatedItem
+                          : menuItem
+                    )
+                );
+
+                if (supabase) {
+                  const { error } =
+                    await supabase
+                      .from("menu_items")
+                      .update({
+                        item: updatedItem
+                      })
+                      .eq(
+                        "id",
+                        String(item.id)
+                      );
+
+                  if (error) {
+                    console.error(
+                      "Could not update availability:",
+                      error
+                    );
+
+                    alert(
+                      "Availability could not be saved."
+                    );
+                  }
+                }
+              }}
+            >
+              {item.available
+                ? "Available"
+                : "Unavailable"}
+            </button>
+
+            <button
+              className="gold-button"
+              onClick={async () => {
+                await saveMenuToSupabase(
+                  menu
+                );
+
+                alert(
+                  "Menu saved successfully."
+                );
+              }}
+            >
+              Save Menu
+            </button>
+
+            <button
+              className="danger-button"
+              onClick={async () => {
+                const updatedMenu =
+                  menu.filter(
+                    (entry) =>
+                      entry.id !== item.id
+                  );
+
+                setMenu(updatedMenu);
+
+                await saveMenuToSupabase(
+                  updatedMenu
+                );
+              }}
+            >
+              <Trash2 size={16} />
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  </section>
+)}
 
 {tab === "stock" && (
   <section>
@@ -3166,6 +3384,181 @@ await saveMenuToSupabase(updatedMenu);
                 ))
               )}
             </div>
+                    </section>
+        )}
+
+        {tab === "settings" && (
+          <section>
+            <div className="admin-heading">
+              <div>
+                <p className="eyebrow">
+                  CONFIGURATION
+                </p>
+
+                <h1>
+                  Restaurant settings
+                </h1>
+
+                <p>
+                  Manage restaurant details,
+                  payments and contact information.
+                </p>
+              </div>
+            </div>
+
+            <div className="settings-grid">
+              {[
+                ["name", "Name"],
+                ["ownerName", "Owner name"],
+                ["tagline", "Tagline"],
+                ["phone", "Phone"],
+                ["whatsapp", "WhatsApp"],
+                ["address", "Address"],
+                [
+                  "openingHours",
+                  "Opening hours"
+                ],
+                ["instagram", "Instagram"],
+                ["facebook", "Facebook"],
+                ["mapsUrl", "Google Maps URL"],
+                ["upiId", "UPI ID"]
+              ].map(([field, label]) => (
+                <label key={field}>
+                  {label}
+
+                  <input
+                    value={
+                      settings[field] || ""
+                    }
+                    onChange={(event) =>
+                      updateSetting(
+                        field,
+                        event.target.value
+                      )
+                    }
+                  />
+                </label>
+              ))}
+
+              <label>
+                Service charge
+
+                <input
+                  type="number"
+                  min="0"
+                  value={
+                    settings.serviceCharge ||
+                    0
+                  }
+                  onChange={(event) =>
+                    updateSetting(
+                      "serviceCharge",
+                      Number(
+                        event.target.value
+                      ) || 0
+                    )
+                  }
+                />
+              </label>
+
+              <label>
+                Tax %
+
+                <input
+                  type="number"
+                  min="0"
+                  value={
+                    settings.tax || 0
+                  }
+                  onChange={(event) =>
+                    updateSetting(
+                      "tax",
+                      Number(
+                        event.target.value
+                      ) || 0
+                    )
+                  }
+                />
+              </label>
+
+              <label>
+                UPI payments
+
+                <select
+                  value={
+                    settings.upiEnabled
+                      ? "enabled"
+                      : "disabled"
+                  }
+                  onChange={(event) =>
+                    updateSetting(
+                      "upiEnabled",
+                      event.target.value ===
+                        "enabled"
+                    )
+                  }
+                >
+                  <option value="enabled">
+                    Enabled
+                  </option>
+
+                  <option value="disabled">
+                    Disabled
+                  </option>
+                </select>
+              </label>
+            </div>
+
+            <div className="settings-card">
+              <p className="eyebrow">
+                UPI QR
+              </p>
+
+              <h2>
+                Payment QR Code
+              </h2>
+
+              {settings.upiQr && (
+                <img
+                  src={settings.upiQr}
+                  alt="UPI QR"
+                  className="upi-qr"
+                />
+              )}
+
+              <label className="upload-qr-button">
+                Upload / Replace QR
+
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  onChange={uploadUpiQr}
+                />
+              </label>
+            </div>
+
+            <button
+              className="gold-button"
+              onClick={async () => {
+                const success =
+                  await saveSettingsToSupabase(
+                    settings
+                  );
+
+                if (!success) {
+                  alert(
+                    "Restaurant settings could not be saved."
+                  );
+                  return;
+                }
+
+                alert(
+                  "Restaurant settings saved successfully."
+                );
+              }}
+            >
+              Save Restaurant Settings
+            </button>
           </section>
         )}
       </main>
@@ -3180,31 +3573,66 @@ function AdminDashboard({
   setSoundEnabled,
   playNewOrderSound
 }) {
+  const today = new Date();
+
+  const todayOrders = orders.filter(
+    (order) => {
+      if (!order.createdAt) {
+        return false;
+      }
+
+      const orderDate =
+        new Date(order.createdAt);
+
+      return (
+        orderDate.getFullYear() ===
+          today.getFullYear() &&
+        orderDate.getMonth() ===
+          today.getMonth() &&
+        orderDate.getDate() ===
+          today.getDate()
+      );
+    }
+  );
+
+  const todayNewOrders =
+    todayOrders.filter(
+      (order) =>
+        order.status === "Received"
+    );
+
   return (
     <section>
       <div className="admin-heading">
-  <div>
-    <p className="eyebrow">
-      OVERVIEW
-    </p>
+        <div>
+          <p className="eyebrow">
+            OVERVIEW
+          </p>
 
-    <h1>
-      Dashboard
-    </h1>
-  </div>
+          <h1>
+            Dashboard
+          </h1>
+        </div>
 
-  <button
-    className="gold-button"
-    onClick={() => {
-      setSoundEnabled(true);
-      playNewOrderSound();
-    }}
-  >
-    {soundEnabled
-      ? "🔔 New Order Sound ON"
-      : "🔔 Enable Order Sound"}
-  </button>
-</div>
+        <button
+          className="gold-button"
+          onClick={() => {
+            if (soundEnabled) {
+              setSoundEnabled(false);
+              return;
+            }
+
+            setSoundEnabled(true);
+
+            // Test the voice immediately
+            playNewOrderSound();
+          }}
+        >
+          {soundEnabled
+            ? "🔔 New Order Sound ON"
+            : "🔕 New Order Sound OFF"}
+        </button>
+      </div>
 
       <div className="stats-grid">
         <div>
@@ -3223,11 +3651,11 @@ function AdminDashboard({
           <ShoppingBag />
 
           <strong>
-            {orders.length}
+            {todayOrders.length}
           </strong>
 
           <span>
-            Total orders
+            Today's orders
           </span>
         </div>
 
@@ -3235,17 +3663,11 @@ function AdminDashboard({
           <Clock3 />
 
           <strong>
-            {
-              orders.filter(
-                (order) =>
-                  order.status ===
-                  "Received"
-              ).length
-            }
+            {todayNewOrders.length}
           </strong>
 
           <span>
-            New orders
+            New orders today
           </span>
         </div>
       </div>
