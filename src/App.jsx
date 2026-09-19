@@ -2210,7 +2210,9 @@ function Admin({
 
   const [tab, setTab] = useState('dashboard');
 
-  const [soundEnabled, setSoundEnabled] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(() => {
+    return localStorage.getItem('kk-order-sound-enabled') === 'true';
+  });
 
   /*
    * RAW MATERIAL MANAGEMENT
@@ -2247,6 +2249,16 @@ function Admin({
   const knownOrderIdsRef = useRef(new Set());
 
   const soundEnabledRef = useRef(false);
+
+  /*
+   * KEEP NEW ORDER SOUND SETTING
+   * AFTER PAGE REFRESH
+   */
+  useEffect(() => {
+    localStorage.setItem('kk-order-sound-enabled', String(soundEnabled));
+
+    soundEnabledRef.current = soundEnabled;
+  }, [soundEnabled]);
 
   /*
    * LOAD RAW MATERIAL INVENTORY
@@ -3416,837 +3428,138 @@ function Admin({
           </section>
         )}
 
-{tab === 'stock' && (
-  <section>
-    <div className="admin-heading">
-      <div>
-        <p className="eyebrow">INVENTORY</p>
-
-        <h1>Stock Management</h1>
-
-        <p>
-          Manage finished food stock, raw materials and daily
-          purchase expenses.
-        </p>
-      </div>
-    </div>
-
-    {/* ==============================
-        FINISHED FOOD STOCK
-        ============================== */}
-
-    <div
-      style={{
-        marginBottom: '18px',
-      }}
-    >
-      <p className="eyebrow">FINISHED FOOD</p>
-
-      <h2
-        style={{
-          margin: '4px 0 0',
-        }}
-      >
-        Finished Food Stock
-      </h2>
-    </div>
-
-    <div className="stock-summary-grid">
-      <div className="stock-summary-card">
-        <span>Total Stock</span>
-
-        <strong>
-          {menu.reduce(
-            (total, item) =>
-              total + Number(item.totalStock || 0),
-            0
-          )}
-        </strong>
-      </div>
-
-      <div className="stock-summary-card">
-        <span>Sold Stock</span>
-
-        <strong>
-          {menu.reduce(
-            (total, item) =>
-              total + Number(item.soldStock || 0),
-            0
-          )}
-        </strong>
-      </div>
-
-      <div className="stock-summary-card">
-        <span>Live Stock</span>
-
-        <strong>
-          {menu.reduce(
-            (total, item) =>
-              total +
-              Math.max(
-                0,
-                Number(item.totalStock || 0) -
-                  Number(item.soldStock || 0)
-              ),
-            0
-          )}
-        </strong>
-      </div>
-    </div>
-
-    <div className="stock-list">
-      {menu.map((item) => {
-        const totalStock =
-          Number(item.totalStock || 0);
-
-        const soldStock =
-          Number(item.soldStock || 0);
-
-        const liveStock =
-          Math.max(
-            0,
-            totalStock - soldStock
-          );
-
-        return (
-          <div
-            className="stock-item-card"
-            key={item.id}
-          >
-            <div className="stock-item-main">
-              <img
-                src={item.image}
-                alt={item.name}
-              />
-
+        {tab === 'stock' && (
+          <section>
+            <div className="admin-heading">
               <div>
-                <h3>{item.name}</h3>
+                <p className="eyebrow">INVENTORY</p>
 
-                <span>{item.category}</span>
+                <h1>Stock Management</h1>
+
+                <p>Track total, sold and live stock for every menu item.</p>
               </div>
             </div>
 
-            <label className="stock-field">
-              <span>Total Stock</span>
+            <div className="stock-summary-grid">
+              <div className="stock-summary-card">
+                <span>Total Stock</span>
 
-              <input
-                type="number"
-                min="0"
-                value={totalStock}
-                onChange={(event) => {
-                  const value =
-                    event.target.value;
-
-                  setMenu(
-                    (currentMenu) =>
-                      currentMenu.map(
-                        (menuItem) =>
-                          menuItem.id ===
-                          item.id
-                            ? {
-                                ...menuItem,
-
-                                totalStock:
-                                  Math.max(
-                                    0,
-                                    Number(
-                                      value
-                                    ) || 0
-                                  ),
-                              }
-                            : menuItem
-                      )
-                  );
-                }}
-              />
-            </label>
-
-            <div className="stock-number">
-              <span>Sold</span>
-
-              <strong>
-                {soldStock}
-              </strong>
-            </div>
-
-            <div className="stock-number live">
-              <span>Live</span>
-
-              <strong>
-                {liveStock}
-              </strong>
-            </div>
-
-            <button
-              type="button"
-              className="gold-button"
-              onClick={() =>
-                updateStock(
-                  item.id,
-                  totalStock
-                )
-              }
-            >
-              Update Stock
-            </button>
-
-            <span
-              className={
-                liveStock > 0
-                  ? 'stock-status live'
-                  : 'stock-status sold-out'
-              }
-            >
-              {liveStock > 0
-                ? 'LIVE'
-                : 'SOLD OUT'}
-            </span>
-          </div>
-        );
-      })}
-    </div>
-
-    {/* ==============================
-        RAW MATERIALS
-        ============================== */}
-
-    <div
-      style={{
-        marginTop: '50px',
-        paddingTop: '32px',
-        borderTop:
-          '1px solid rgba(0, 0, 0, 0.12)',
-      }}
-    >
-      <p className="eyebrow">
-        RAW MATERIAL INVENTORY
-      </p>
-
-      <h2
-        style={{
-          margin: '4px 0 8px',
-        }}
-      >
-        Raw Materials
-      </h2>
-
-      <p
-        style={{
-          marginTop: 0,
-          opacity: 0.7,
-        }}
-      >
-        Add ingredients and manually maintain
-        current physical stock.
-      </p>
-    </div>
-
-    {/* ADD RAW MATERIAL */}
-
-    <div
-      className="stock-summary-card"
-      style={{
-        marginTop: '20px',
-        padding: '22px',
-      }}
-    >
-      <h3
-        style={{
-          marginTop: 0,
-        }}
-      >
-        Add Raw Material
-      </h3>
-
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns:
-            'minmax(180px, 2fr) minmax(120px, 1fr) auto',
-          gap: '12px',
-          alignItems: 'end',
-        }}
-      >
-        <label className="stock-field">
-          <span>Material Name</span>
-
-          <input
-            type="text"
-            value={rawMaterialName}
-            onChange={(event) =>
-              setRawMaterialName(
-                event.target.value
-              )
-            }
-            placeholder="Example: Basmati Rice"
-          />
-        </label>
-
-        <label className="stock-field">
-          <span>Unit</span>
-
-          <select
-            value={rawMaterialUnit}
-            onChange={(event) =>
-              setRawMaterialUnit(
-                event.target.value
-              )
-            }
-          >
-            <option value="kg">kg</option>
-
-            <option value="g">g</option>
-
-            <option value="L">Litre</option>
-
-            <option value="ml">ml</option>
-
-            <option value="pcs">
-              Pieces
-            </option>
-
-            <option value="packets">
-              Packets
-            </option>
-          </select>
-        </label>
-
-        <button
-          type="button"
-          className="gold-button"
-          onClick={addRawMaterial}
-        >
-          <Plus size={16} />
-
-          Add Material
-        </button>
-      </div>
-    </div>
-
-    {/* CURRENT RAW MATERIAL STOCK */}
-
-    <div
-      style={{
-        marginTop: '28px',
-      }}
-    >
-      <h3>Current Raw Material Stock</h3>
-
-      {rawMaterials.length === 0 ? (
-        <div className="empty-state">
-          <Package size={42} />
-
-          <p>
-            No raw materials added yet.
-          </p>
-        </div>
-      ) : (
-        <div className="stock-list">
-          {rawMaterials.map(
-            (material) => (
-              <div
-                className="stock-item-card"
-                key={material.id}
-              >
-                <div className="stock-item-main">
-                  <div>
-                    <h3>
-                      {material.name}
-                    </h3>
-
-                    <span>
-                      Unit: {material.unit}
-                    </span>
-                  </div>
-                </div>
-
-                <label className="stock-field">
-                  <span>
-                    Current Stock
-                  </span>
-
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={
-                      material.current_stock ??
-                      0
-                    }
-                    onChange={(event) =>
-                      updateRawMaterialStock(
-                        material,
-                        event.target.value
-                      )
-                    }
-                  />
-                </label>
-
-                <div className="stock-number live">
-                  <span>Unit</span>
-
-                  <strong>
-                    {material.unit}
-                  </strong>
-                </div>
-
-                <button
-                  type="button"
-                  className="gold-button"
-                  onClick={() =>
-                    saveRawMaterialStock(
-                      material
-                    )
-                  }
-                >
-                  Update Stock
-                </button>
-
-                <button
-                  type="button"
-                  className="outline-button"
-                  onClick={() =>
-                    deleteRawMaterial(
-                      material
-                    )
-                  }
-                >
-                  <Trash2 size={16} />
-
-                  Delete
-                </button>
+                <strong>
+                  {menu.reduce(
+                    (total, item) => total + Number(item.totalStock || 0),
+                    0
+                  )}
+                </strong>
               </div>
-            )
-          )}
-        </div>
-      )}
-    </div>
 
-    {/* ==============================
-        PURCHASE ENTRY
-        ============================== */}
+              <div className="stock-summary-card">
+                <span>Sold Stock</span>
 
-    <div
-      style={{
-        marginTop: '50px',
-        paddingTop: '32px',
-        borderTop:
-          '1px solid rgba(0, 0, 0, 0.12)',
-      }}
-    >
-      <p className="eyebrow">
-        DAILY EXPENSES
-      </p>
+                <strong>
+                  {menu.reduce(
+                    (total, item) => total + Number(item.soldStock || 0),
+                    0
+                  )}
+                </strong>
+              </div>
 
-      <h2
-        style={{
-          margin: '4px 0 8px',
-        }}
-      >
-        Raw Material Purchase Entry
-      </h2>
+              <div className="stock-summary-card">
+                <span>Live Stock</span>
 
-      <p
-        style={{
-          marginTop: 0,
-          opacity: 0.7,
-        }}
-      >
-        Record each purchase separately so
-        historical prices and daily expenses
-        remain available.
-      </p>
-    </div>
+                <strong>
+                  {menu.reduce(
+                    (total, item) =>
+                      total +
+                      Math.max(
+                        0,
+                        Number(item.totalStock || 0) -
+                          Number(item.soldStock || 0)
+                      ),
+                    0
+                  )}
+                </strong>
+              </div>
+            </div>
 
-    <div
-      className="stock-summary-card"
-      style={{
-        marginTop: '20px',
-        padding: '22px',
-      }}
-    >
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns:
-            'repeat(auto-fit, minmax(170px, 1fr))',
-          gap: '14px',
-        }}
-      >
-        <label className="stock-field">
-          <span>Date</span>
+            <div className="stock-list">
+              {menu.map((item) => {
+                const totalStock = Number(item.totalStock || 0);
 
-          <input
-            type="date"
-            value={purchaseDate}
-            onChange={(event) =>
-              setPurchaseDate(
-                event.target.value
-              )
-            }
-          />
-        </label>
+                const soldStock = Number(item.soldStock || 0);
 
-        <label className="stock-field">
-          <span>Raw Material</span>
-
-          <select
-            value={purchaseMaterialId}
-            onChange={(event) =>
-              setPurchaseMaterialId(
-                event.target.value
-              )
-            }
-          >
-            <option value="">
-              Select Material
-            </option>
-
-            {rawMaterials.map(
-              (material) => (
-                <option
-                  key={material.id}
-                  value={material.id}
-                >
-                  {material.name} (
-                  {material.unit})
-                </option>
-              )
-            )}
-          </select>
-        </label>
-
-        <label className="stock-field">
-          <span>Quantity</span>
-
-          <input
-            type="number"
-            min="0"
-            step="0.01"
-            value={purchaseQuantity}
-            onChange={(event) =>
-              setPurchaseQuantity(
-                event.target.value
-              )
-            }
-            placeholder="0"
-          />
-        </label>
-
-        <label className="stock-field">
-          <span>
-            Price Per Unit (₹)
-          </span>
-
-          <input
-            type="number"
-            min="0"
-            step="0.01"
-            value={purchasePrice}
-            onChange={(event) =>
-              setPurchasePrice(
-                event.target.value
-              )
-            }
-            placeholder="0"
-          />
-        </label>
-
-        <label className="stock-field">
-          <span>
-            Supplier (Optional)
-          </span>
-
-          <input
-            type="text"
-            value={purchaseSupplier}
-            onChange={(event) =>
-              setPurchaseSupplier(
-                event.target.value
-              )
-            }
-            placeholder="Supplier name"
-          />
-        </label>
-      </div>
-
-      <div
-        style={{
-          marginTop: '20px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent:
-            'space-between',
-          gap: '16px',
-          flexWrap: 'wrap',
-        }}
-      >
-        <div>
-          <span
-            style={{
-              display: 'block',
-              fontSize: '13px',
-              opacity: 0.65,
-              marginBottom: '4px',
-            }}
-          >
-            Purchase Total
-          </span>
-
-          <strong
-            style={{
-              fontSize: '24px',
-            }}
-          >
-            {money(
-              Number(
-                purchaseQuantity || 0
-              ) *
-                Number(
-                  purchasePrice || 0
-                )
-            )}
-          </strong>
-        </div>
-
-        <button
-          type="button"
-          className="gold-button"
-          onClick={
-            addRawMaterialPurchase
-          }
-          disabled={
-            rawMaterials.length === 0
-          }
-        >
-          <Plus size={16} />
-
-          Save Purchase
-        </button>
-      </div>
-    </div>
-
-    {/* ==============================
-        TODAY PURCHASE TOTAL
-        ============================== */}
-
-    <div
-      className="stock-summary-grid"
-      style={{
-        marginTop: '28px',
-      }}
-    >
-      <div className="stock-summary-card">
-        <span>
-          Today's Purchase Expense
-        </span>
-
-        <strong>
-          {money(
-            rawMaterialPurchases
-              .filter((purchase) => {
-                const today =
-                  new Date();
-
-                const year =
-                  today.getFullYear();
-
-                const month =
-                  String(
-                    today.getMonth() + 1
-                  ).padStart(2, '0');
-
-                const day =
-                  String(
-                    today.getDate()
-                  ).padStart(2, '0');
-
-                const todayString =
-                  `${year}-${month}-${day}`;
+                const liveStock = Math.max(0, totalStock - soldStock);
 
                 return (
-                  purchase.purchase_date ===
-                  todayString
+                  <div className="stock-item-card" key={item.id}>
+                    <div className="stock-item-main">
+                      <img src={item.image} alt={item.name} />
+
+                      <div>
+                        <h3>{item.name}</h3>
+
+                        <span>{item.category}</span>
+                      </div>
+                    </div>
+
+                    <label className="stock-field">
+                      <span>Total Stock</span>
+
+                      <input
+                        type="number"
+                        min="0"
+                        value={totalStock}
+                        onChange={(event) => {
+                          const value = event.target.value;
+
+                          setMenu((currentMenu) =>
+                            currentMenu.map((menuItem) =>
+                              menuItem.id === item.id
+                                ? {
+                                    ...menuItem,
+                                    totalStock: Math.max(0, Number(value) || 0),
+                                  }
+                                : menuItem
+                            )
+                          );
+                        }}
+                      />
+                    </label>
+
+                    <div className="stock-number">
+                      <span>Sold</span>
+
+                      <strong>{soldStock}</strong>
+                    </div>
+
+                    <div className="stock-number live">
+                      <span>Live</span>
+
+                      <strong>{liveStock}</strong>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="gold-button"
+                      onClick={() => updateStock(item.id, totalStock)}
+                    >
+                      Update Stock
+                    </button>
+
+                    <span
+                      className={
+                        liveStock > 0
+                          ? 'stock-status live'
+                          : 'stock-status sold-out'
+                      }
+                    >
+                      {liveStock > 0 ? 'LIVE' : 'SOLD OUT'}
+                    </span>
+                  </div>
                 );
-              })
-              .reduce(
-                (total, purchase) =>
-                  total +
-                  Number(
-                    purchase.total_amount ||
-                      0
-                  ),
-                0
-              )
-          )}
-        </strong>
-      </div>
-
-      <div className="stock-summary-card">
-        <span>
-          Total Purchase Records
-        </span>
-
-        <strong>
-          {rawMaterialPurchases.length}
-        </strong>
-      </div>
-
-      <div className="stock-summary-card">
-        <span>Raw Materials</span>
-
-        <strong>
-          {rawMaterials.length}
-        </strong>
-      </div>
-    </div>
-
-    {/* ==============================
-        PURCHASE HISTORY
-        ============================== */}
-
-    <div
-      style={{
-        marginTop: '36px',
-      }}
-    >
-      <p className="eyebrow">
-        PURCHASE HISTORY
-      </p>
-
-      <h2
-        style={{
-          margin: '4px 0 18px',
-        }}
-      >
-        Raw Material Purchase History
-      </h2>
-
-      {rawMaterialPurchases.length ===
-      0 ? (
-        <div className="empty-state">
-          <Package size={42} />
-
-          <p>
-            No raw material purchases
-            recorded yet.
-          </p>
-        </div>
-      ) : (
-        <div
-          style={{
-            display: 'grid',
-            gap: '12px',
-          }}
-        >
-          {rawMaterialPurchases.map(
-            (purchase) => (
-              <div
-                key={purchase.id}
-                className="stock-summary-card"
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns:
-                    '1.2fr 1.5fr 1fr 1fr 1fr 1.3fr',
-                  gap: '14px',
-                  alignItems: 'center',
-                  padding: '18px',
-                }}
-              >
-                <div>
-                  <span>Date</span>
-
-                  <strong
-                    style={{
-                      display: 'block',
-                      marginTop: '5px',
-                    }}
-                  >
-                    {purchase.purchase_date ||
-                      '-'}
-                  </strong>
-                </div>
-
-                <div>
-                  <span>Material</span>
-
-                  <strong
-                    style={{
-                      display: 'block',
-                      marginTop: '5px',
-                    }}
-                  >
-                    {purchase.material_name}
-                  </strong>
-                </div>
-
-                <div>
-                  <span>Quantity</span>
-
-                  <strong
-                    style={{
-                      display: 'block',
-                      marginTop: '5px',
-                    }}
-                  >
-                    {Number(
-                      purchase.quantity || 0
-                    )}{' '}
-                    {purchase.unit}
-                  </strong>
-                </div>
-
-                <div>
-                  <span>Price / Unit</span>
-
-                  <strong
-                    style={{
-                      display: 'block',
-                      marginTop: '5px',
-                    }}
-                  >
-                    {money(
-                      purchase.price_per_unit
-                    )}
-                  </strong>
-                </div>
-
-                <div>
-                  <span>Total</span>
-
-                  <strong
-                    style={{
-                      display: 'block',
-                      marginTop: '5px',
-                    }}
-                  >
-                    {money(
-                      purchase.total_amount
-                    )}
-                  </strong>
-                </div>
-
-                <div>
-                  <span>Supplier</span>
-
-                  <strong
-                    style={{
-                      display: 'block',
-                      marginTop: '5px',
-                    }}
-                  >
-                    {purchase.supplier ||
-                      '-'}
-                  </strong>
-                </div>
-              </div>
-            )
-          )}
-        </div>
-      )}
-    </div>
-  </section>
-)}
+              })}
+            </div>
+          </section>
+        )}
 
         {tab === 'orders' && (
           <section>
