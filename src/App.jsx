@@ -2191,18 +2191,26 @@ function Admin({
           Restaurant settings
         </button>
 
-        <button
-          onClick={() => {
-            sessionStorage.removeItem('kk-admin-auth');
+        <button onClick={exit}>
+  <ArrowLeft size={17} />
+  Storefront
+</button>
 
-            setLoggedIn(false);
+<button
+  onClick={async () => {
+    sessionStorage.removeItem(
+      "kk-admin-auth"
+    );
 
-            exit();
-          }}
-        >
-          <ArrowLeft size={17} />
-          Storefront
-        </button>
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
+
+    setLoggedIn(false);
+  }}
+>
+  Logout
+</button>
       </aside>
 
       <main className="admin-main">
