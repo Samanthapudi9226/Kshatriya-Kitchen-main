@@ -2430,136 +2430,194 @@ function Admin({
           </section>
         )}
 
-        {tab === 'orders' && (
-          <section>
-            <div className="admin-heading">
-              <div>
-                <p className="eyebrow">FULFILMENT</p>
+        {tab === 'orders' &&
+          (() => {
+            const today = new Date();
 
-                <h1>Orders management</h1>
-              </div>
-            </div>
+            const isToday = (order) => {
+              if (!order.createdAt) {
+                return false;
+              }
 
-            <div className="orders-list">
-              {orders.length === 0 ? (
-                <div className="empty-state">
-                  <ShoppingBag size={42} />
-                  <p>No orders yet.</p>
-                </div>
-              ) : (
-                orders.map((order) => (
-                  <div className="order-card" key={order.id}>
-                    <div>
-                      <strong>{order.id}</strong>
+              const orderDate = new Date(order.createdAt);
 
-                      <p>
-                        {order.customer.name} · {order.customer.phone}
-                      </p>
+              return (
+                orderDate.getFullYear() === today.getFullYear() &&
+                orderDate.getMonth() === today.getMonth() &&
+                orderDate.getDate() === today.getDate()
+              );
+            };
 
-                      <p>{order.customer.address}</p>
+            const todayOrders = orders.filter(isToday);
 
-                      {order.customer.notes && (
-                        <p>
-                          <strong>Notes:</strong> {order.customer.notes}
+            const previousOrders = orders.filter((order) => !isToday(order));
+
+            const renderOrder = (order) => (
+              <div className="order-card" key={order.id}>
+                <div>
+                  <strong>{order.id}</strong>
+
+                  <p>
+                    {order.customer.name} · {order.customer.phone}
+                  </p>
+
+                  <p>{order.customer.address}</p>
+
+                  <p>
+                    <strong>Ordered:</strong>{' '}
+                    {order.createdAt
+                      ? new Date(order.createdAt).toLocaleString('en-IN', {
+                          dateStyle: 'medium',
+                          timeStyle: 'short',
+                        })
+                      : '-'}
+                  </p>
+
+                  {order.customer.notes && (
+                    <p>
+                      <strong>Notes:</strong> {order.customer.notes}
+                    </p>
+                  )}
+
+                  {order.items && order.items.length > 0 && (
+                    <div className="order-items">
+                      <strong>Order Items</strong>
+
+                      {order.items.map((item) => (
+                        <p key={item.id}>
+                          {item.name} × {item.quantity} —{' '}
+                          {money(item.price * item.quantity)}
                         </p>
-                      )}
-
-                      {order.items && order.items.length > 0 && (
-                        <div className="order-items">
-                          <strong>Order Items</strong>
-
-                          {order.items.map((item) => (
-                            <p key={item.id}>
-                              {item.name} × {item.quantity} —{' '}
-                              {money(item.price * item.quantity)}
-                            </p>
-                          ))}
-                        </div>
-                      )}
+                      ))}
                     </div>
+                  )}
+                </div>
 
-                    <select
-                      value={order.status || 'Received'}
-                      onChange={async (event) => {
-                        const newStatus = event.target.value;
+                <select
+                  value={order.status || 'Received'}
+                  onChange={async (event) => {
+                    const newStatus = event.target.value;
 
-                        const updatedOrder = {
-                          ...order,
-                          status: newStatus,
-                          updatedAt: new Date().toISOString(),
-                        };
+                    const updatedOrder = {
+                      ...order,
+                      status: newStatus,
+                      updatedAt: new Date().toISOString(),
+                    };
 
-                        // Update admin UI immediately
-                        setOrders((current) =>
-                          current.map((entry) =>
-                            entry.id === order.id ? updatedOrder : entry
-                          )
+                    setOrders((current) =>
+                      current.map((entry) =>
+                        entry.id === order.id ? updatedOrder : entry
+                      )
+                    );
+
+                    if (supabase) {
+                      const { error } = await supabase
+                        .from('orders')
+                        .update({
+                          order_data: updatedOrder,
+                          updated_at: new Date().toISOString(),
+                        })
+                        .eq('id', order.id);
+
+                      if (error) {
+                        console.error('Could not update order status:', error);
+
+                        alert(
+                          'Status changed locally, but could not save to Supabase.'
                         );
 
-                        // Save status to Supabase
-                        if (supabase) {
-                          const { error } = await supabase
-                            .from('orders')
-                            .update({
-                              order_data: updatedOrder,
-                              updated_at: new Date().toISOString(),
-                            })
-                            .eq('id', order.id);
+                        return;
+                      }
+                    }
 
-                          if (error) {
-                            console.error(
-                              'Could not update order status:',
-                              error
-                            );
+                    sendCustomerStatusWhatsApp(updatedOrder, newStatus);
+                  }}
+                >
+                  <option value="Received">Received</option>
 
-                            alert(
-                              'Status changed locally, but could not save to Supabase.'
-                            );
+                  <option value="Order is being prepared">
+                    Order is being prepared
+                  </option>
 
-                            return;
-                          }
-                        }
+                  <option value="Order is packing">Order is packing</option>
 
-                        // Open customer WhatsApp with prefilled status message
-                        sendCustomerStatusWhatsApp(updatedOrder, newStatus);
-                      }}
-                    >
-                      <option value="Received">Received</option>
+                  <option value="Order is in transit">
+                    Order is in transit
+                  </option>
 
-                      <option value="Order is being prepared">
-                        Order is being prepared
-                      </option>
+                  <option value="Delivered">Delivered</option>
 
-                      <option value="Order is packing">Order is packing</option>
+                  <option value="Cancelled">Cancelled</option>
+                </select>
 
-                      <option value="Order is in transit">
-                        Order is in transit
-                      </option>
+                <strong>{money(order.total)}</strong>
 
-                      <option value="Delivered">Delivered</option>
+                {order.payment && (
+                  <div>
+                    <strong>{order.payment.method || 'Payment'}</strong>
 
-                      <option value="Cancelled">Cancelled</option>
-                    </select>
-
-                    <strong>{money(order.total)}</strong>
-
-                    {order.payment && (
-                      <div>
-                        <strong>{order.payment.method || 'Payment'}</strong>
-
-                        {order.payment.transactionId && (
-                          <p>Txn: {order.payment.transactionId}</p>
-                        )}
-
-                        <p>{order.payment.status || '-'}</p>
-                      </div>
+                    {order.payment.transactionId && (
+                      <p>Txn: {order.payment.transactionId}</p>
                     )}
+
+                    <p>{order.payment.status || '-'}</p>
                   </div>
-                ))
-              )}
-            </div>
-          </section>
-        )}
+                )}
+              </div>
+            );
+
+            return (
+              <section>
+                <div className="admin-heading">
+                  <div>
+                    <p className="eyebrow">FULFILMENT</p>
+
+                    <h1>Orders management</h1>
+                  </div>
+                </div>
+
+                <div className="admin-heading">
+                  <div>
+                    <p className="eyebrow">TODAY</p>
+
+                    <h2>Today's Orders ({todayOrders.length})</h2>
+                  </div>
+                </div>
+
+                <div className="orders-list">
+                  {todayOrders.length === 0 ? (
+                    <div className="empty-state">
+                      <ShoppingBag size={42} />
+
+                      <p>No orders today.</p>
+                    </div>
+                  ) : (
+                    todayOrders.map(renderOrder)
+                  )}
+                </div>
+
+                <div className="admin-heading" style={{ marginTop: '40px' }}>
+                  <div>
+                    <p className="eyebrow">HISTORY</p>
+
+                    <h2>Previous Orders ({previousOrders.length})</h2>
+                  </div>
+                </div>
+
+                <div className="orders-list">
+                  {previousOrders.length === 0 ? (
+                    <div className="empty-state">
+                      <Package size={42} />
+
+                      <p>No previous orders.</p>
+                    </div>
+                  ) : (
+                    previousOrders.map(renderOrder)
+                  )}
+                </div>
+              </section>
+            );
+          })()}
       </main>
     </div>
   );
@@ -2572,11 +2630,31 @@ function AdminDashboard({
   setSoundEnabled,
   playNewOrderSound,
 }) {
+  const today = new Date();
+
+  const todayOrders = orders.filter((order) => {
+    if (!order.createdAt) {
+      return false;
+    }
+
+    const orderDate = new Date(order.createdAt);
+
+    return (
+      orderDate.getFullYear() === today.getFullYear() &&
+      orderDate.getMonth() === today.getMonth() &&
+      orderDate.getDate() === today.getDate()
+    );
+  });
+
+  const todayNewOrders = todayOrders.filter(
+    (order) => order.status === 'Received'
+  );
+
   return (
     <section>
       <div className="admin-heading">
         <div>
-          <p className="eyebrow">OVERVIEW</p>
+          <p className="eyebrow">TODAY'S OVERVIEW</p>
 
           <h1>Dashboard</h1>
         </div>
@@ -2584,11 +2662,10 @@ function AdminDashboard({
         <button
           className="gold-button"
           onClick={() => {
-            setSoundEnabled(true);
-            playNewOrderSound();
+            setSoundEnabled((current) => !current);
           }}
         >
-          {soundEnabled ? '🔔 New Order Sound ON' : '🔔 Enable Order Sound'}
+          {soundEnabled ? '🔔 New Order Sound ON' : '🔕 New Order Sound OFF'}
         </button>
       </div>
 
@@ -2604,19 +2681,17 @@ function AdminDashboard({
         <div>
           <ShoppingBag />
 
-          <strong>{orders.length}</strong>
+          <strong>{todayOrders.length}</strong>
 
-          <span>Total orders</span>
+          <span>Today's orders</span>
         </div>
 
         <div>
           <Clock3 />
 
-          <strong>
-            {orders.filter((order) => order.status === 'Received').length}
-          </strong>
+          <strong>{todayNewOrders.length}</strong>
 
-          <span>New orders</span>
+          <span>New orders today</span>
         </div>
       </div>
     </section>
