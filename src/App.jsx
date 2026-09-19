@@ -2807,17 +2807,58 @@ await saveMenuToSupabase(updatedMenu);
     <div className="admin-heading">
       <div>
         <p className="eyebrow">
-          MENU
+          CATALOGUE
         </p>
 
         <h1>
           Menu management
         </h1>
+      </div>
 
-        <p>
-          Manage menu items, prices and
-          availability.
-        </p>
+      <div
+        style={{
+          display: "flex",
+          gap: "12px"
+        }}
+      >
+        <button
+          type="button"
+          className="gold-button"
+          onClick={async () => {
+            await saveMenuToSupabase(menu);
+
+            alert(
+              "Menu saved successfully."
+            );
+          }}
+        >
+          Save menu
+        </button>
+
+        <button
+          type="button"
+          className="gold-button"
+          onClick={() => {
+            const newItem = {
+              id: `item-${Date.now()}`,
+              name: "New item",
+              description: "",
+              category: "Biryani",
+              price: 0,
+              image: "",
+              available: true,
+              totalStock: 0,
+              soldStock: 0
+            };
+
+            setMenu((currentMenu) => [
+              ...currentMenu,
+              newItem
+            ]);
+          }}
+        >
+          Add item
+        </button>
       </div>
     </div>
 
@@ -3005,20 +3046,7 @@ await saveMenuToSupabase(updatedMenu);
                 : "Unavailable"}
             </button>
 
-            <button
-              className="gold-button"
-              onClick={async () => {
-                await saveMenuToSupabase(
-                  menu
-                );
-
-                alert(
-                  "Menu saved successfully."
-                );
-              }}
-            >
-              Save Menu
-            </button>
+            
 
             <button
               className="danger-button"
