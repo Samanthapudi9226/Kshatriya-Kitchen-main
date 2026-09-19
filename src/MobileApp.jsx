@@ -1,13 +1,14 @@
 import React, { useEffect, useMemo, useState } from "react";
-import LogoIntro from "./LogoIntro";
+import {
+  setOptions,
+  importLibrary,
+} from "@googlemaps/js-api-loader";
 import "./MobileApp.css";
-export default 
 
-function MobileApp({
+export default function MobileApp({
   menu = [],
   settings = {},
   cart = [],
-  orders = [],
   customerUser = null,
   customerProfile = null,
   mobilePage = "home",
@@ -22,47 +23,51 @@ function MobileApp({
   onLogout,
   onLocation,
   onHome,
-}) {
- const [showIntro, setShowIntro] = useState(() => {
-  return !sessionStorage.getItem("kk-intro-shown");
-});
-  const [search, setSearch] = useState("");
-const [activeCategory, setActiveCategory] = useState("All");
-const [showLocationSheet, setShowLocationSheet] = useState(false);
-const [locationSearch, setLocationSearch] = useState("");
-const [placeSuggestions, setPlaceSuggestions] = useState([]);
-
-const [theme, setTheme] = useState(() => {
-  return localStorage.getItem("kk-mobile-theme") || "light";
-});
-
-const toggleTheme = () => {
-  setTheme((currentTheme) => {
-    const nextTheme =
-      currentTheme === "light" ? "dark" : "light";
-
-    localStorage.setItem(
-      "kk-mobile-theme",
-      nextTheme
-    );
-
-    return nextTheme;
-  });
-};
-
+}) {  const [search, setSearch] = useState("");
+  const [activeCategory, setActiveCategory] = useState("All");
+  const [showLocationSheet, setShowLocationSheet] = useState(false);
+  const [locationSearch, setLocationSearch] = useState("");
+  const [placeSuggestions, setPlaceSuggestions] = useState([]);
+const [placesReady, setPlacesReady] = useState(false);
 useEffect(() => {
-  if (!showIntro) {
-    return;
-  }
+  let cancelled = false;
 
-  sessionStorage.setItem("kk-intro-shown", "true");
+  const loadGooglePlaces = async () => {
+    try {
+      const apiKey =
+        import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
-  const introTimer = setTimeout(() => {
-    setShowIntro(false);
-  }, 5000);
+      if (!apiKey) {
+        console.error(
+          "Google Maps API key is missing."
+        );
+        return;
+      }
 
-  return () => clearTimeout(introTimer);
-}, [showIntro]);
+      setOptions({
+        key: apiKey,
+        v: "weekly",
+      });
+
+      await importLibrary("places");
+
+      if (!cancelled) {
+        setPlacesReady(true);
+      }
+    } catch (error) {
+      console.error(
+        "Google Places could not be loaded:",
+        error
+      );
+    }
+  };
+
+  loadGooglePlaces();
+
+  return () => {
+    cancelled = true;
+  };
+}, []);  
 
 const savedLocationsKey = customerUser?.id
   ? `kk-saved-locations-${customerUser.id}`
@@ -236,135 +241,132 @@ useEffect(() => {
   setSearch(getItemName(item)); 
 }; 
  
-const handleLocationSearch = async (event) => {
-  const value = event.target.value;
-
-  setLocationSearch(value);
-
-  if (!value.trim() || value.trim().length < 3) {
-    setPlaceSuggestions([]);
-    return;
-  }
-
-  try {
-    const apiKey =
-      import.meta.env.VITE_GEOAPIFY_API_KEY;
-
-    if (!apiKey) {
-      console.error(
-        "Geoapify API key is missing."
-      );
-      setPlaceSuggestions([]);
-      return;
-    }
-
-    const url =
-      `https://api.geoapify.com/v1/geocode/autocomplete` +
-      `?text=${encodeURIComponent(value.trim())}` +
-      `&filter=countrycode:in` +
-      `&lang=en` +
-      `&limit=6` +
-      `&format=json` +
-      `&apiKey=${encodeURIComponent(apiKey)}`;
-
-    const response = await fetch(url);
-
-    if (!response.ok) {
-      throw new Error(
-        `Geoapify request failed: ${response.status}`
-      );
-    }
-
-    const data = await response.json();
-
-    setPlaceSuggestions(
-      Array.isArray(data?.results)
-        ? data.results
-        : []
-    );
-  } catch (error) {
-    console.error(
-      "Geoapify autocomplete error:",
-      error
-    );
-
-    setPlaceSuggestions([]);
-  }
+const handleLocationSearch = async (event) => { 
+  const value = event.target.value; 
+ 
+  setLocationSearch(value); 
+ 
+  if (!value.trim()) { 
+    setPlaceSuggestions([]); 
+    return; 
+  } 
+ 
+  if (!placesReady) { 
+    return; 
+  } 
+ 
+  try { 
+    const { AutocompleteSuggestion } = 
+      await importLibrary("places"); 
+ 
+    const request = { 
+      input: value.trim(), 
+      includedRegionCodes: ["in"], 
+      language: "en-IN", 
+    }; 
+ 
+    const { suggestions } = 
+      await AutocompleteSuggestion.fetchAutocompleteSuggestions( 
+        request 
+      ); 
+ 
+    const results = (suggestions || []).filter( 
+      (suggestion) => 
+        suggestion?.placePrediction 
+    ); 
+ 
+    setPlaceSuggestions(results); 
+  } catch (error) { 
+    console.error( 
+      "Google Places autocomplete error:", 
+      error 
+    ); 
+ 
+    setPlaceSuggestions([]); 
+  } 
 }; 
-const handleLocationPlaceSelect = async (suggestion) => {
-  try {
-    if (!suggestion) {
-      return;
-    }
-
-    const address =
-      suggestion.formatted ||
-      suggestion.address_line1 ||
-      suggestion.name ||
-      "";
-
-    const latitude = Number(suggestion.lat);
-    const longitude = Number(suggestion.lon);
-
-    if (
-      !address ||
-      !Number.isFinite(latitude) ||
-      !Number.isFinite(longitude)
-    ) {
-      console.error(
-        "Geoapify did not return a valid location."
-      );
-      return;
-    }
-
-    const newLocation = {
-      label:
-        suggestion.name ||
-        suggestion.address_line1 ||
-        suggestion.city ||
-        suggestion.suburb ||
-        "Saved Address",
-      address,
-      latitude,
-      longitude,
-      selected: true,
-    };
-
-    const updatedLocations = [
-      ...savedLocations.map((location) => ({
-        ...location,
-        selected: false,
-      })),
-      newLocation,
-    ];
-
-    setSavedLocations(updatedLocations);
-
+ 
+const handleLocationPlaceSelect = async (suggestion) => { 
+  try { 
+    const prediction = suggestion?.placePrediction; 
+ 
+    if (!prediction) { 
+      return; 
+    } 
+ 
+    const place = prediction.toPlace(); 
+ 
+    await place.fetchFields({ 
+      fields: [ 
+        "displayName", 
+        "formattedAddress", 
+        "location", 
+      ], 
+    }); 
+ 
+    const address = 
+      place.formattedAddress || 
+      place.displayName || 
+      ""; 
+ 
+    const latitude = place.location?.lat(); 
+    const longitude = place.location?.lng(); 
+ 
+    if ( 
+      !address || 
+      !Number.isFinite(latitude) || 
+      !Number.isFinite(longitude) 
+    ) { 
+      console.error( 
+        "Google Place did not return a valid location." 
+      ); 
+      return; 
+    } 
+ 
+    const newLocation = { 
+      label: "Saved Address", 
+      address, 
+      latitude, 
+      longitude, 
+      selected: true, 
+    }; 
+ 
+    const updatedLocations = [ 
+      ...savedLocations.map((location) => ({ 
+        ...location, 
+        selected: false, 
+      })), 
+      newLocation, 
+    ]; 
+ 
+    setSavedLocations(updatedLocations); 
+ 
     if (savedLocationsKey) {
-      localStorage.setItem(
-        savedLocationsKey,
-        JSON.stringify(updatedLocations)
-      );
-    }
-
-    if (onLocationSelected) {
-      await onLocationSelected({
-        address,
-        latitude,
-        longitude,
-      });
-    }
-
-    setLocationSearch(address);
-    setPlaceSuggestions([]);
-    setShowLocationSheet(false);
-  } catch (error) {
-    console.error(
-      "Could not select Geoapify location:",
-      error
-    );
-  }
-};  const handleAddAddress = () => {
+  localStorage.setItem(
+    savedLocationsKey,
+    JSON.stringify(updatedLocations)
+  );
+}
+ 
+    if (onLocationSelected) { 
+      await onLocationSelected({ 
+        address, 
+        latitude, 
+        longitude, 
+      }); 
+    } 
+ 
+    setLocationSearch(address); 
+    setPlaceSuggestions([]); 
+    setShowLocationSheet(false); 
+  } catch (error) { 
+    console.error( 
+      "Could not select Google location:", 
+      error 
+    ); 
+  } 
+};
+  const handleAddAddress = () => {
   setShowLocationSheet(false);
 
   if (onAddAddress) {
@@ -588,33 +590,12 @@ const handleDeleteLocation = (index) => {
 {locationSearch.trim() && placeSuggestions.length > 0 && (
   <div className="kk-place-suggestions">
     {placeSuggestions.map((suggestion, index) => {
-      const mainText =
-        suggestion.name ||
-        suggestion.address_line1 ||
-        suggestion.street ||
-        suggestion.suburb ||
-        suggestion.city ||
-        "Location";
-
-      const secondaryText =
-        suggestion.address_line2 ||
-        [
-          suggestion.suburb,
-          suggestion.city,
-          suggestion.county,
-          suggestion.state,
-          suggestion.postcode,
-        ]
-          .filter(Boolean)
-          .join(", ");
+      const prediction = suggestion?.placePrediction;
 
       return (
         <button
           type="button"
-          key={
-            suggestion.place_id ||
-            `${suggestion.lat}-${suggestion.lon}-${index}`
-          }
+          key={`${prediction?.placeId || "place"}-${index}`}
           className="kk-place-suggestion"
           onClick={() =>
             handleLocationPlaceSelect(suggestion)
@@ -625,19 +606,22 @@ const handleDeleteLocation = (index) => {
           </span>
 
           <span className="kk-place-suggestion-text">
-            <strong>{mainText}</strong>
+            <strong>
+              {prediction?.mainText?.text ||
+                prediction?.text?.text ||
+                "Location"}
+            </strong>
 
             <small>
-              {secondaryText ||
-                suggestion.formatted ||
-                ""}
+              {prediction?.secondaryText?.text || ""}
             </small>
           </span>
         </button>
       );
     })}
   </div>
-)}          <button
+)}
+          <button
             type="button"
             className="kk-location-action"
             onClick={handleCurrentLocation}
@@ -700,12 +684,10 @@ const handleDeleteLocation = (index) => {
 
   setSavedLocations(updatedLocations);
 
-if (savedLocationsKey) {
   localStorage.setItem(
-    savedLocationsKey,
+    "kk-saved-locations",
     JSON.stringify(updatedLocations)
   );
-}
 
   if (onLocationSelected) {
     onLocationSelected({
@@ -737,29 +719,15 @@ if (savedLocationsKey) {
         </button>
 
         <button
-  type="button"
-  className="kk-saved-location-delete"
-  onClick={() => {
-    setSavedLocations([]);
-
-    if (savedLocationsKey) {
-      localStorage.removeItem(savedLocationsKey);
-    }
-
-    if (onLocationSelected) {
-      onLocationSelected({
-        address: "",
-        latitude: null,
-        longitude: null,
-      });
-    }
-
-    setLocationSearch("");
-  }}
-  aria-label="Delete saved address"
->
-  🗑️
-</button>
+          type="button"
+          className="kk-saved-location-delete"
+          onClick={() => handleDeleteLocation(index)}
+          aria-label={`Delete ${
+            location.label || "saved address"
+          }`}
+        >
+          🗑️
+        </button>
       </div>
     ))
   ) : customerProfile?.address ? (
@@ -1146,151 +1114,31 @@ if (savedLocationsKey) {
   );
 
   const renderOrders = () => (
-  <div className="kk-mobile-page">
-    <header className="kk-mobile-inner-header">
-      <div>
-        <span className="kk-small-label">MY ACCOUNT</span>
-        <h2>My Orders</h2>
-      </div>
-
-      <button
-        type="button"
-        className="kk-profile-button"
-        onClick={customerUser ? onProfile : onLogin}
-      >
-        👤
-      </button>
-    </header>
-
-    <section className="kk-menu-section">
-      {!customerUser ? (
-        <div className="kk-empty-menu">
-          <div>👤</div>
-          <h3>Login to view orders</h3>
-          <p>
-            Sign in to see your KshatriyaS Kitchen
-            order history.
-          </p>
-
-          <button
-            type="button"
-            className="kk-primary-button"
-            onClick={onLogin}
-          >
-            Login / Register
-          </button>
+    <div className="kk-mobile-page">
+      <header className="kk-mobile-inner-header">
+        <div>
+          <span className="kk-small-label">MY ACCOUNT</span>
+          <h2>My Orders</h2>
         </div>
-      ) : orders.length === 0 ? (
+
+        <button
+          type="button"
+          className="kk-profile-button"
+          onClick={customerUser ? onProfile : onLogin}
+        >
+          👤
+        </button>
+      </header>
+
+      <section className="kk-menu-section">
         <div className="kk-empty-menu">
           <div>📦</div>
-          <h3>No orders yet</h3>
-          <p>
-            Your KshatriyaS Kitchen orders will
-            appear here after you place an order.
-          </p>
+          <h3>My Orders</h3>
+          <p>Your orders will appear here.</p>
         </div>
-      ) : (
-        <div className="kk-mobile-orders-list">
-          {orders.map((order) => {
-            const orderDate = order.createdAt
-              ? new Date(order.createdAt)
-              : null;
-
-            return (
-              <article
-                className="kk-mobile-order-card"
-                key={order.id}
-              >
-                <div className="kk-mobile-order-top">
-                  <div>
-                    <span className="kk-small-label">
-                      ORDER ID
-                    </span>
-
-                    <h3>{order.id}</h3>
-                  </div>
-
-                  <span
-                    className={`kk-mobile-order-status ${
-                      order.status === "Delivered"
-                        ? "delivered"
-                        : order.status === "Cancelled"
-                          ? "cancelled"
-                          : ""
-                    }`}
-                  >
-                    {order.status || "Received"}
-                  </span>
-                </div>
-
-                {orderDate &&
-                  !Number.isNaN(orderDate.getTime()) && (
-                    <p className="kk-mobile-order-date">
-                      {orderDate.toLocaleString("en-IN", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </p>
-                  )}
-
-                <div className="kk-mobile-order-items">
-                  {(order.items || []).map((item) => (
-                    <div
-                      className="kk-mobile-order-item"
-                      key={item.id}
-                    >
-                      <span>
-                        {item.name} × {item.quantity}
-                      </span>
-
-                      <strong>
-                        ₹
-                        {Number(
-                          item.price * item.quantity
-                        ).toFixed(0)}
-                      </strong>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="kk-mobile-order-divider" />
-
-                <div className="kk-mobile-order-info">
-                  <span>Payment</span>
-
-                  <strong>
-                    {order.payment?.method || "-"}
-                  </strong>
-                </div>
-
-                {order.payment?.status && (
-                  <div className="kk-mobile-order-info">
-                    <span>Payment status</span>
-
-                    <strong>
-                      {order.payment.status}
-                    </strong>
-                  </div>
-                )}
-
-                <div className="kk-mobile-order-total">
-                  <span>Total</span>
-
-                  <strong>
-                    ₹{Number(order.total || 0).toFixed(0)}
-                  </strong>
-                </div>
-              </article>
-            );
-          })}
-        </div>
-      )}
-    </section>
-  </div>
-);
+      </section>
+    </div>
+  );
 
   const renderAccount = () => (
     <div className="kk-mobile-page">
@@ -1331,88 +1179,61 @@ if (savedLocationsKey) {
         </div>
 
         <div className="kk-profile-options">
-  <button
-    type="button"
-    className="kk-profile-option"
-    onClick={onEditProfile}
-  >
-    <span className="kk-profile-option-icon">✏️</span>
+          <button
+            type="button"
+            className="kk-profile-option"
+            onClick={onEditProfile}
+          >
+            <span className="kk-profile-option-icon">✏️</span>
 
-    <span>
-      <strong>Edit Profile</strong>
-      <small>Update your personal details</small>
-    </span>
+            <span>
+              <strong>Edit Profile</strong>
+              <small>Update your personal details</small>
+            </span>
 
-    <b>›</b>
-  </button>
+            <b>›</b>
+          </button>
 
-  <button
-    type="button"
-    className="kk-profile-option"
-    onClick={handleLocation}
-  >
-    <span className="kk-profile-option-icon">
-      {renderMapPin()}
-    </span>
+          <button
+            type="button"
+            className="kk-profile-option"
+            onClick={handleLocation}
+          >
+            <span className="kk-profile-option-icon">
+              {renderMapPin()}
+            </span>
 
-    <span>
-      <strong>Delivery Location</strong>
-      <small>
-        {customerProfile?.address ||
-          "Select your delivery location"}
-      </small>
-    </span>
+            <span>
+              <strong>Delivery Location</strong>
+              <small>
+                {customerProfile?.address ||
+                  "Select your delivery location"}
+              </small>
+            </span>
 
-    <b>›</b>
-  </button>
+            <b>›</b>
+          </button>
 
-  <button
-    type="button"
-    className="kk-profile-option"
-    onClick={onOrders}
-  >
-  <span className="kk-profile-option-icon">▣</span>
+          <button
+            type="button"
+            className="kk-profile-option"
+            onClick={onOrders}
+          >
+            <span className="kk-profile-option-icon">▣</span>
 
-  <span>
-    <strong>My Orders</strong>
-    <small>View your previous orders</small>
-  </span>
+            <span>
+              <strong>My Orders</strong>
+              <small>View your previous orders</small>
+            </span>
 
-  <b>›</b>
-</button>
+            <b>›</b>
+          </button>
 
-<button
-  type="button"
-  className="kk-profile-option kk-theme-option"
-  onClick={toggleTheme}
->
-  <span className="kk-profile-option-icon">
-    {theme === "dark" ? "🌙" : "☀️"}
-  </span>
-
-  <span>
-    <strong>Appearance</strong>
-    <small>
-      {theme === "dark"
-        ? "Dark theme"
-        : "Light theme"}
-    </small>
-  </span>
-
-  <span
-    className={`kk-theme-switch ${
-      theme === "dark" ? "active" : ""
-    }`}
-  >
-    <span className="kk-theme-switch-knob" />
-  </span>
-</button>
-
-<button
-  type="button"
-  className="kk-profile-option logout"
-  onClick={onLogout}
->
+          <button
+            type="button"
+            className="kk-profile-option logout"
+            onClick={onLogout}
+          >
             <span className="kk-profile-option-icon">↪</span>
 
             <span>
@@ -1433,20 +1254,12 @@ if (savedLocationsKey) {
     pageContent = renderOrders();
   } else if (mobilePage === "account") {
     pageContent = renderAccount();
-   } else {
+  } else {
     pageContent = renderHome();
   }
 
-  if (showIntro) {
-    return <LogoIntro />;
-  }
-
   return (
-  <div
-    className={`kk-mobile-app ${
-      theme === "dark" ? "kk-dark-theme" : "kk-light-theme"
-    }`}
-  >
+    <div className="kk-mobile-app">
       <main
         key={mobilePage}
         className="kk-mobile-page-transition"
