@@ -2306,7 +2306,7 @@ function Admin({
       );
 
       message.lang = 'en-IN';
-      message.rate = 0.8;
+      message.rate = 0.6;
       message.pitch = 1;
       message.volume = 2;
 
