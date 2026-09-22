@@ -2456,223 +2456,6 @@ function Admin({
   }
 
   /*
-   * RAW MATERIALS
-   */
-
-  async function refreshRawMaterials() {
-    const materials = await loadRawMaterialsFromSupabase();
-
-    const purchases = await loadRawMaterialPurchases();
-
-    setRawMaterials(materials);
-
-    setRawMaterialPurchases(purchases);
-  }
-
-  async function addRawMaterial() {
-    const name = rawMaterialName.trim();
-
-    if (!name) {
-      alert('Please enter raw material name.');
-
-      return;
-    }
-
-    if (!supabase) {
-      alert('Supabase is not configured.');
-
-      return;
-    }
-
-    const material = {
-      id: `raw-${Date.now()}`,
-
-      name,
-
-      unit: rawMaterialUnit,
-
-      current_stock: 0,
-
-      updated_at: new Date().toISOString(),
-    };
-
-    const { error } = await supabase.from('raw_materials').insert(material);
-
-    if (error) {
-      console.error('Could not add raw material:', error);
-
-      alert('Could not add raw material.');
-
-      return;
-    }
-
-    setRawMaterialName('');
-
-    setRawMaterialUnit('kg');
-
-    await refreshRawMaterials();
-  }
-
-  async function deleteRawMaterial(material) {
-    const confirmed = window.confirm(`Delete ${material.name}?`);
-
-    if (!confirmed) {
-      return;
-    }
-
-    const { error } = await supabase
-      .from('raw_materials')
-      .delete()
-      .eq('id', material.id);
-
-    if (error) {
-      console.error('Could not delete raw material:', error);
-
-      alert('Could not delete raw material.');
-
-      return;
-    }
-
-    if (purchaseMaterialId === material.id) {
-      setPurchaseMaterialId('');
-    }
-
-    await refreshRawMaterials();
-  }
-
-  async function updateRawMaterialStock(material, value) {
-    const safeStock = Math.max(0, Number(value) || 0);
-
-    setRawMaterials((current) =>
-      current.map((entry) =>
-        entry.id === material.id
-          ? {
-              ...entry,
-              current_stock: safeStock,
-            }
-          : entry
-      )
-    );
-  }
-
-  async function saveRawMaterialStock(material) {
-    const currentMaterial = rawMaterials.find(
-      (entry) => entry.id === material.id
-    );
-
-    if (!currentMaterial) {
-      return;
-    }
-
-    const safeStock = Math.max(0, Number(currentMaterial.current_stock) || 0);
-
-    const { error } = await supabase
-      .from('raw_materials')
-      .update({
-        current_stock: safeStock,
-
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', material.id);
-
-    if (error) {
-      console.error('Could not update raw material stock:', error);
-
-      alert('Could not update stock.');
-
-      return;
-    }
-
-    await refreshRawMaterials();
-  }
-
-  async function addRawMaterialPurchase() {
-    if (!purchaseMaterialId) {
-      alert('Please select a raw material.');
-
-      return;
-    }
-
-    const material = rawMaterials.find(
-      (entry) => entry.id === purchaseMaterialId
-    );
-
-    if (!material) {
-      alert('Raw material not found.');
-
-      return;
-    }
-
-    const quantity = Math.max(0, Number(purchaseQuantity) || 0);
-
-    const pricePerUnit = Math.max(0, Number(purchasePrice) || 0);
-
-    if (quantity <= 0) {
-      alert('Please enter purchase quantity.');
-
-      return;
-    }
-
-    if (pricePerUnit <= 0) {
-      alert('Please enter price per unit.');
-
-      return;
-    }
-
-    const totalAmount = quantity * pricePerUnit;
-
-    const purchase = {
-      id: `purchase-${Date.now()}`,
-
-      material_id: material.id,
-
-      material_name: material.name,
-
-      quantity,
-
-      unit: material.unit,
-
-      price_per_unit: pricePerUnit,
-
-      total_amount: totalAmount,
-
-      purchase_date: purchaseDate,
-
-      supplier: purchaseSupplier.trim() || null,
-    };
-
-    const { error } = await supabase
-      .from('raw_material_purchases')
-      .insert(purchase);
-
-    if (error) {
-      console.error('Could not save purchase:', error);
-
-      alert('Could not save purchase.');
-
-      return;
-    }
-
-    /*
-     * Purchase is recorded as an expense.
-     *
-     * Current physical stock is NOT
-     * automatically changed.
-     *
-     * Admin updates actual remaining
-     * stock manually.
-     */
-
-    setPurchaseQuantity('');
-
-    setPurchasePrice('');
-
-    setPurchaseSupplier('');
-
-    await refreshRawMaterials();
-  }
-
-  /*
    * RAW MATERIAL MANAGEMENT
    */
 
@@ -3560,6 +3343,365 @@ function Admin({
                   </div>
                 );
               })}
+            </div>
+
+            {/* =====================================================
+                RAW MATERIALS
+                ===================================================== */}
+
+            <div
+              style={{
+                marginTop: '42px',
+                paddingTop: '30px',
+                borderTop: '1px solid rgba(255,255,255,0.12)',
+              }}
+            >
+              <div className="admin-heading">
+                <div>
+                  <p className="eyebrow">KITCHEN INVENTORY</p>
+                  <h1>Raw Materials</h1>
+                  <p>
+                    Track ingredients, current physical stock and purchase
+                    expenses.
+                  </p>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                  gap: '14px',
+                  marginBottom: '24px',
+                }}
+              >
+                <div className="stock-summary-card">
+                  <span>Raw Materials</span>
+                  <strong>{rawMaterials.length}</strong>
+                </div>
+
+                <div className="stock-summary-card">
+                  <span>Total Purchase Entries</span>
+                  <strong>{rawMaterialPurchases.length}</strong>
+                </div>
+
+                <div className="stock-summary-card">
+                  <span>Today's Purchase Expense</span>
+                  <strong>
+                    {money(
+                      rawMaterialPurchases
+                        .filter(
+                          (purchase) => purchase.purchase_date === purchaseDate
+                        )
+                        .reduce(
+                          (sum, purchase) =>
+                            sum + Number(purchase.total_amount || 0),
+                          0
+                        )
+                    )}
+                  </strong>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+                  gap: '18px',
+                  marginBottom: '26px',
+                }}
+              >
+                <div className="stock-item-card">
+                  <div style={{ width: '100%' }}>
+                    <p className="eyebrow">NEW INGREDIENT</p>
+                    <h3 style={{ marginTop: 0 }}>Add Raw Material</h3>
+
+                    <label className="stock-field">
+                      <span>Material Name</span>
+                      <input
+                        type="text"
+                        value={rawMaterialName}
+                        onChange={(event) =>
+                          setRawMaterialName(event.target.value)
+                        }
+                        placeholder="Example: Chicken, Rice, Oil"
+                      />
+                    </label>
+
+                    <label className="stock-field">
+                      <span>Unit</span>
+                      <select
+                        value={rawMaterialUnit}
+                        onChange={(event) =>
+                          setRawMaterialUnit(event.target.value)
+                        }
+                      >
+                        <option value="kg">kg</option>
+                        <option value="g">g</option>
+                        <option value="L">L</option>
+                        <option value="ml">ml</option>
+                        <option value="pcs">pcs</option>
+                        <option value="packets">packets</option>
+                      </select>
+                    </label>
+
+                    <button
+                      type="button"
+                      className="gold-button"
+                      onClick={addRawMaterial}
+                    >
+                      Add Raw Material
+                    </button>
+                  </div>
+                </div>
+
+                <div className="stock-item-card">
+                  <div style={{ width: '100%' }}>
+                    <p className="eyebrow">PURCHASE</p>
+                    <h3 style={{ marginTop: 0 }}>Purchase Entry</h3>
+
+                    <label className="stock-field">
+                      <span>Date</span>
+                      <input
+                        type="date"
+                        value={purchaseDate}
+                        onChange={(event) =>
+                          setPurchaseDate(event.target.value)
+                        }
+                      />
+                    </label>
+
+                    <label className="stock-field">
+                      <span>Raw Material</span>
+                      <select
+                        value={purchaseMaterialId}
+                        onChange={(event) =>
+                          setPurchaseMaterialId(event.target.value)
+                        }
+                      >
+                        <option value="">Select material</option>
+
+                        {rawMaterials.map((material) => (
+                          <option key={material.id} value={material.id}>
+                            {material.name} ({material.unit})
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="stock-field">
+                      <span>Quantity</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="any"
+                        value={purchaseQuantity}
+                        onChange={(event) =>
+                          setPurchaseQuantity(event.target.value)
+                        }
+                        placeholder="0"
+                      />
+                    </label>
+
+                    <label className="stock-field">
+                      <span>Price per Unit</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="any"
+                        value={purchasePrice}
+                        onChange={(event) =>
+                          setPurchasePrice(event.target.value)
+                        }
+                        placeholder="0"
+                      />
+                    </label>
+
+                    <label className="stock-field">
+                      <span>Supplier</span>
+                      <input
+                        type="text"
+                        value={purchaseSupplier}
+                        onChange={(event) =>
+                          setPurchaseSupplier(event.target.value)
+                        }
+                        placeholder="Optional"
+                      />
+                    </label>
+
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        gap: '12px',
+                        margin: '14px 0',
+                      }}
+                    >
+                      <span>Purchase Total</span>
+                      <strong>
+                        {money(
+                          Number(purchaseQuantity || 0) *
+                            Number(purchasePrice || 0)
+                        )}
+                      </strong>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="gold-button"
+                      onClick={addRawMaterialPurchase}
+                      disabled={rawMaterials.length === 0}
+                    >
+                      Save Purchase
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="admin-heading">
+                <div>
+                  <p className="eyebrow">PHYSICAL INVENTORY</p>
+                  <h1>Current Raw Material Stock</h1>
+                </div>
+              </div>
+
+              {rawMaterials.length === 0 ? (
+                <div className="empty-state">
+                  <Package size={42} />
+                  <p>No raw materials added yet.</p>
+                </div>
+              ) : (
+                <div className="stock-list">
+                  {rawMaterials.map((material) => (
+                    <div className="stock-item-card" key={material.id}>
+                      <div className="stock-item-main">
+                        <div>
+                          <h3>{material.name}</h3>
+                          <span>Unit: {material.unit}</span>
+                        </div>
+                      </div>
+
+                      <label className="stock-field">
+                        <span>Current Stock</span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="any"
+                          value={Number(material.current_stock || 0)}
+                          onChange={(event) =>
+                            updateRawMaterialStock(
+                              material,
+                              event.target.value
+                            )
+                          }
+                        />
+                      </label>
+
+                      <div className="stock-number live">
+                        <span>Available</span>
+                        <strong>
+                          {Number(material.current_stock || 0)} {material.unit}
+                        </strong>
+                      </div>
+
+                      <button
+                        type="button"
+                        className="gold-button"
+                        onClick={() => saveRawMaterialStock(material)}
+                      >
+                        Update Stock
+                      </button>
+
+                      <button
+                        type="button"
+                        className="text-button"
+                        onClick={() => deleteRawMaterial(material)}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="admin-heading" style={{ marginTop: '34px' }}>
+                <div>
+                  <p className="eyebrow">EXPENSE LOG</p>
+                  <h1>Purchase History</h1>
+                </div>
+              </div>
+
+              {rawMaterialPurchases.length === 0 ? (
+                <div className="empty-state">
+                  <Package size={42} />
+                  <p>No raw material purchases recorded yet.</p>
+                </div>
+              ) : (
+                <div
+                  style={{
+                    overflowX: 'auto',
+                    width: '100%',
+                  }}
+                >
+                  <table
+                    style={{
+                      width: '100%',
+                      borderCollapse: 'collapse',
+                      minWidth: '720px',
+                    }}
+                  >
+                    <thead>
+                      <tr>
+                        <th style={{ textAlign: 'left', padding: '12px' }}>
+                          Date
+                        </th>
+                        <th style={{ textAlign: 'left', padding: '12px' }}>
+                          Material
+                        </th>
+                        <th style={{ textAlign: 'left', padding: '12px' }}>
+                          Quantity
+                        </th>
+                        <th style={{ textAlign: 'left', padding: '12px' }}>
+                          Price / Unit
+                        </th>
+                        <th style={{ textAlign: 'left', padding: '12px' }}>
+                          Total
+                        </th>
+                        <th style={{ textAlign: 'left', padding: '12px' }}>
+                          Supplier
+                        </th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {rawMaterialPurchases.map((purchase) => (
+                        <tr key={purchase.id}>
+                          <td style={{ padding: '12px' }}>
+                            {purchase.purchase_date || '-'}
+                          </td>
+                          <td style={{ padding: '12px' }}>
+                            {purchase.material_name || '-'}
+                          </td>
+                          <td style={{ padding: '12px' }}>
+                            {Number(purchase.quantity || 0)}{' '}
+                            {purchase.unit || ''}
+                          </td>
+                          <td style={{ padding: '12px' }}>
+                            {money(purchase.price_per_unit)}
+                          </td>
+                          <td style={{ padding: '12px' }}>
+                            <strong>{money(purchase.total_amount)}</strong>
+                          </td>
+                          <td style={{ padding: '12px' }}>
+                            {purchase.supplier || '-'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </section>
         )}
